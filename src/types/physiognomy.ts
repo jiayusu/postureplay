@@ -147,26 +147,38 @@ export interface BonePhysiognomyMetrics {
 
 // ─── 运势解读类型 ───
 
+/** 四层治疗方案 */
+export interface TreatmentPlan {
+  /** 第一层：生活微调 — 饮食/作息/衣着即时提醒 */
+  daily: string[]
+  /** 第二层：主动干预 — 可自行完成的动作/按摩/呼吸法 */
+  weekly: string[]
+  /** 第三层：外部辅助 — 推荐实体工具或环境调整 */
+  tools: string[]
+  /** 第四层：专业对接 — 温和建议就医（null = 暂无必要） */
+  medical: string | null
+}
+
+/** 单维度运势（运势文案 + 治疗方案） */
+export interface DimensionFortune {
+  /** 12 字以内运势总结 */
+  summary: string
+  /** 80-120 字风趣解读 */
+  detail: string
+  /** 15 字以内养生一句话 */
+  advice: string
+  /** 四层个性化治疗方案 */
+  treatmentPlan: TreatmentPlan
+}
+
 /** 运势解读 */
 export interface FortuneInterpretation {
   /** 脊柱运势 */
-  spine: {
-    summary: string
-    detail: string
-    advice: string
-  }
+  spine: DimensionFortune
   /** 手相运势 */
-  palm: {
-    summary: string
-    detail: string
-    advice: string
-  }
+  palm: DimensionFortune
   /** 骨相运势 */
-  bone: {
-    summary: string
-    detail: string
-    advice: string
-  }
+  bone: DimensionFortune
   /** 综合运势 */
   overall: {
     score: number

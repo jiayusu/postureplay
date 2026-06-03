@@ -2,9 +2,23 @@
  * 运势解读生成服务
  * 基于相术指标生成传统文化风格的运势文本
  */
-import type { SpineMetrics, PalmStarsMetrics, BonePhysiognomyMetrics, FortuneInterpretation } from '../../types/physiognomy'
+import type { SpineMetrics, PalmStarsMetrics, BonePhysiognomyMetrics, FortuneInterpretation, TreatmentPlan } from '../../types/physiognomy'
 
-// ─── 脊柱运势解读 ───
+// ============================================================
+// 工具
+// ============================================================
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function emptyPlan(): TreatmentPlan {
+  return { daily: [], weekly: [], tools: [], medical: null }
+}
+
+// ============================================================
+// 脊柱运势解读
+// ============================================================
 
 const SPINE_TEMPLATES = {
   excellent: {
@@ -32,10 +46,6 @@ const SPINE_TEMPLATES = {
   },
 }
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
-
 function generateSpineFortune(metrics: SpineMetrics): FortuneInterpretation['spine'] {
   const score = metrics.overallScore
   let templates: typeof SPINE_TEMPLATES.excellent
@@ -46,17 +56,42 @@ function generateSpineFortune(metrics: SpineMetrics): FortuneInterpretation['spi
 
   // 添加段特定提示
   let detailExtra = ''
+  const plan = emptyPlan()
+
   if (metrics.cervical.deviation > 0.4) {
     detailExtra += '颈椎前探明显，提示"天门受堵"，需注意肩颈劳损与头晕之虞。'
+    plan.daily.push('电脑垫高至视线平视，每45分钟做"下巴后缩"动作（5次×3组）')
+    plan.weekly.push('每日YTWL肩背操，重点T动作（肩胛后夹）8次×2组')
+    plan.tools.push('电脑增高架（20-50元），务必调至视线水平')
+    plan.medical = '若伴随手麻或头晕，建议康复科就诊拍颈椎正侧位片'
   }
   if (metrics.thoracic.deviation > 0.4) {
     detailExtra += '胸椎弯曲（含胸驼背），"膻中"气机不畅，易致胸闷气短，心情郁结。'
+    plan.daily.push('靠墙站5分钟（后脑/肩/臀/脚跟四点贴墙），每日两次')
+    plan.weekly.push('俯卧"超人式"核心训练（每次15秒×5组），强化背部')
+    plan.tools.push('瑜伽弹力带（15-25元），每日扩胸15次')
   }
   if (metrics.lumbar.deviation > 0.4) {
     detailExtra += '腰椎失衡，"命门之火"不稳，提示腰部劳损可能，需注意肾脏养护。'
+    plan.daily.push('坐姿保持腰部自然前凸，腰后垫毛巾卷支撑')
+    plan.weekly.push('每日平板支撑40秒×3组 + 猫牛式脊柱灵活性训练')
+    plan.tools.push('腰部支撑靠垫（30-60元），替换办公椅靠背')
   }
   if (Math.abs(metrics.shoulderAsymmetry) > 0.03) {
     detailExtra += '两肩不平，阴阳失衡之象，提示单侧用力过度，宜调息对称运动。'
+    plan.daily.push('注意双侧均衡用力：背包换肩背，鼠标左右手交替')
+    plan.weekly.push('每日耸肩-沉肩练习（10次×2组）+ 弹力带水平外展')
+  }
+  if (metrics.lateralCurvature > 0.15) {
+    plan.daily.push('朝弯曲反方向侧卧5分钟，利用重力辅助矫正')
+    plan.weekly.push('每日侧桥支撑（凸侧向上）30秒×2组')
+    plan.tools.push('十字拉力带（20-30元），每日双侧均衡扩胸')
+  }
+
+  // 无特别偏差 → 通用保健
+  if (plan.daily.length === 0) {
+    plan.daily.push('保持每小时起身活动2分钟，眺望远方')
+    plan.weekly.push('每日八段锦"两手托天理三焦"一式（10次）')
   }
 
   const detail = pickRandom(templates.detail) + (detailExtra ? ' ' + detailExtra : '')
@@ -65,6 +100,7 @@ function generateSpineFortune(metrics: SpineMetrics): FortuneInterpretation['spi
     summary: pickRandom(templates.summary),
     detail,
     advice: pickRandom(templates.advice),
+    treatmentPlan: plan,
   }
 }
 
@@ -103,22 +139,55 @@ function generatePalmFortune(metrics: PalmStarsMetrics): FortuneInterpretation['
   else templates = PALM_TEMPLATES.warning
 
   let detailExtra = ''
+  const plan = emptyPlan()
+
   if (metrics.venusMountFullness > 0.7) {
     detailExtra += '金星丘丰隆饱满，主生命力旺盛，人缘佳，多贵人相助。'
+    plan.daily.push('保持手心温暖，忌寒凉食物（冰饮/生食）伤脾胃')
+    plan.weekly.push('每日揉按大鱼际（拇指根部）顺时针36圈，助升元气')
   } else if (metrics.venusMountFullness < 0.3) {
     detailExtra += '金星丘略显平坦，提示生命力有待加强，宜多活动大拇指经络。'
+    plan.daily.push('早餐加山药/莲子/红枣（各15克煮粥），补脾益气')
+    plan.weekly.push('每日敲打肺经（胸前到拇指，从上往下轻敲3遍）')
+    plan.tools.push('握力球（10-20元），每日挤压50次增强手部气血')
   }
 
   const weakRegions = metrics.regions.filter(r => r.energyScore < 40)
   if (weakRegions.length > 0) {
     const names = weakRegions.map(r => `${r.organ}（${r.sector}宫）`).join('、')
     detailExtra += `${names}区域能量偏弱，提示相关脏腑需关注调理。`
+
+    for (const r of weakRegions) {
+      if (r.organ === '心' || r.sector === 'li') {
+        plan.daily.push('午时（11-13点心经当令）小憩15分钟，红色食物（红枣/枸杞）养心')
+        plan.tools.push('左侧桌面放暖色台灯（增强心阳），卧室加红色元素')
+      }
+      if (r.organ === '肾' || r.sector === 'kan') {
+        plan.daily.push('戌时（19-21点）用热水泡脚15分钟，水中加少许盐')
+        plan.weekly.push('每日搓后腰肾俞穴（命门两侧）各36次，温补肾阳')
+      }
+      if (r.organ === '肝' || r.sector === 'zhen') {
+        plan.daily.push('睡前勿怒，23点前入睡（肝经当令时段深度睡眠）')
+        plan.weekly.push('每日敲打大腿内侧肝经（从大腿根到膝内侧）3遍')
+      }
+      if (r.organ === '肺') {
+        plan.daily.push('晨起深呼吸：鼻吸4秒 → 憋气2秒 → 嘴呼6秒 → 循环5次')
+        plan.weekly.push('每日敲打肺经3遍 + 百合银耳羹（每周2次）')
+      }
+    }
+  }
+
+  if (plan.daily.length === 0) {
+    plan.daily.push('保持手心温暖，多搓手促进末梢循环')
+    plan.weekly.push('每日敲打掌中线（劳宫穴→中冲穴），助心包经通畅')
+    plan.tools.push('白玉或白水晶手串（心理暗示增强金行能量）')
   }
 
   return {
     summary: pickRandom(templates.summary),
     detail: pickRandom(templates.detail) + (detailExtra ? ' ' + detailExtra : ''),
     advice: pickRandom(templates.advice),
+    treatmentPlan: plan,
   }
 }
 
@@ -165,23 +234,38 @@ function generateBoneFortune(metrics: BonePhysiognomyMetrics): FortuneInterpreta
   else templates = BONE_TEMPLATES.warning
 
   let detailExtra = ''
+  const plan = emptyPlan()
+
   if (metrics.foreheadFullness > 0.6) {
     detailExtra += '天庭（额头）饱满开阔，早年运势得助，智慧超群。'
+    plan.daily.push('保持额头区域温暖（忌冷风直吹），宜梳头百会穴区域')
+  } else if (metrics.foreheadFullness < 0.3) {
+    plan.daily.push('多读书养气，每日朗读10分钟（调动面肌气血）')
+    plan.weekly.push('每日面部按摩：从眉心→发际线推按（循督脉）36次')
   }
   if (metrics.cheekboneProminence > 0.65) {
     detailExtra += '颧骨高耸，主"权柄在握"，中年事业发展有力。但需防刚愎自用，宜广纳贤言。'
+    plan.daily.push('每日自省时刻：写下当日所有自己可能判断出错的事')
+    plan.weekly.push('每周找一位不同背景的朋友聊聊天，多听少说')
   }
   if (metrics.jawAngle > 125) {
     detailExtra += `腮骨宽大（${Math.round(metrics.jawAngle)}°），象征"毅力与晚运"，晚年福气深厚，为人重信守诺。`
+    plan.daily.push('利用你的持久力优势，每日坚持一项微习惯（如3分钟冥想）')
   }
   if (metrics.noseBridgeStraightness > 0.65) {
     detailExtra += '鼻骨直挺通达，主中年财运亨通，做事有主见不随波逐流。'
+  }
+
+  if (plan.daily.length === 0) {
+    plan.daily.push('保持良好面部表情习惯，经常微笑促进面部气血循环')
+    plan.weekly.push('每日面部瑜伽：金鱼嘴（10次） + 狮子式（5次）锻炼面肌')
   }
 
   return {
     summary: pickRandom(templates.summary),
     detail: pickRandom(templates.detail) + (detailExtra ? ' ' + detailExtra : ''),
     advice: pickRandom(templates.advice),
+    treatmentPlan: plan,
   }
 }
 

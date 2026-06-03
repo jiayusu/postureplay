@@ -29,7 +29,7 @@ import { PalmStarsOverlay } from '@/components/PalmStarsOverlay'
 import { BoneGlowOverlay } from '@/components/BoneGlowOverlay'
 import { EyeNoseOverlay } from '@/components/EyeNoseOverlay'
 import { BodySilhouetteOverlay } from '@/components/BodySilhouetteOverlay'
-import type { FortuneInterpretation } from '@/types/physiognomy'
+import type { FortuneInterpretation, TreatmentPlan } from '@/types/physiognomy'
 
 /** 视图模式 (本地定义，不再依赖 @/rendering) */
 type ViewMode = 'spine' | 'palm' | 'bone' | 'combined'
@@ -402,14 +402,114 @@ function FortuneSection({
   data,
 }: {
   title: string
-  data: { summary: string; detail: string; advice: string }
+  data: { summary: string; detail: string; advice: string; treatmentPlan: TreatmentPlan }
+}) {
+  const [showPlan, setShowPlan] = useState(false)
+  const plan = data.treatmentPlan
+  const hasPlan = plan && (plan.daily.length > 0 || plan.weekly.length > 0 || plan.tools.length > 0 || plan.medical)
+
+  return (
+    <div className="mb-3 rounded-xl bg-[#1a1a2e]/60 border border-white/5 overflow-hidden">
+      {/* 运势摘要（始终可见） */}
+      <div className="p-3">
+        <h3 className="text-[14px] font-bold text-white/90 mb-1.5">{title}</h3>
+        <p className="text-[16px] font-bold text-[#ffd700] mb-1">{data.summary}</p>
+        <p className="text-[12px] text-[#a0a0c0] leading-relaxed mb-1.5">{data.detail}</p>
+        <p className="text-[11px] text-[#f59e4b] leading-relaxed">💡 {data.advice}</p>
+      </div>
+
+      {/* 治疗方案（可折叠） */}
+      {hasPlan && (
+        <>
+          <button
+            onClick={() => setShowPlan(!showPlan)}
+            className="w-full flex items-center justify-between px-3 py-2
+                       border-t border-white/5 text-[11px] text-[#8888aa]
+                       hover:text-[#ffd700] hover:bg-white/[0.02] transition-all"
+          >
+            <span>📋 个性化治疗方案</span>
+            <span className="text-[10px] transition-transform duration-300"
+                  style={{ transform: showPlan ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              ▼
+            </span>
+          </button>
+
+          {showPlan && (
+            <div className="px-3 pb-3 space-y-2 animate-[fadeIn_0.3s_ease-out]">
+              {/* 第一层：生活微调 */}
+              {plan.daily.length > 0 && (
+                <TreatmentTier
+                  icon="🍵"
+                  label="今日可做"
+                  color="#66cc88"
+                  items={plan.daily}
+                />
+              )}
+
+              {/* 第二层：主动干预 */}
+              {plan.weekly.length > 0 && (
+                <TreatmentTier
+                  icon="🧘"
+                  label="本周养成"
+                  color="#66aaff"
+                  items={plan.weekly}
+                />
+              )}
+
+              {/* 第三层：外部辅助 */}
+              {plan.tools.length > 0 && (
+                <TreatmentTier
+                  icon="🔧"
+                  label="试试这些"
+                  color="#ffaa44"
+                  items={plan.tools}
+                />
+              )}
+
+              {/* 第四层：专业对接 */}
+              {plan.medical && (
+                <div className="flex items-start gap-2 p-2 rounded-lg bg-[#ff4444]/10 border border-[#ff4444]/20">
+                  <span className="text-[14px] mt-0.5">🏥</span>
+                  <div>
+                    <span className="text-[10px] font-medium text-[#ff6644]">何时就医</span>
+                    <p className="text-[11px] text-[#ddaaaa] leading-relaxed mt-0.5">{plan.medical}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+/** 治疗方案单层卡片 */
+function TreatmentTier({
+  icon,
+  label,
+  color,
+  items,
+}: {
+  icon: string
+  label: string
+  color: string
+  items: string[]
 }) {
   return (
-    <div className="mb-3 p-3 rounded-xl bg-[#1a1a2e]/60 border border-white/5">
-      <h3 className="text-[14px] font-bold text-white/90 mb-1.5">{title}</h3>
-      <p className="text-[16px] font-bold text-[#ffd700] mb-1">{data.summary}</p>
-      <p className="text-[12px] text-[#a0a0c0] leading-relaxed mb-1.5">{data.detail}</p>
-      <p className="text-[11px] text-[#f59e4b] leading-relaxed">💡 {data.advice}</p>
+    <div className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.03]">
+      <span className="text-[14px] mt-0.5">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <span className="text-[10px] font-medium" style={{ color }}>{label}</span>
+        <ul className="mt-1 space-y-1">
+          {items.map((item, i) => (
+            <li key={i} className="text-[11px] text-[#8888aa] leading-relaxed flex gap-1.5">
+              <span className="text-[8px] mt-1" style={{ color }}>●</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
