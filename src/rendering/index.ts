@@ -11,3 +11,13 @@ export type {
 } from './ThreeRenderer'
 export { PostProcessingPipeline } from './PostProcessing'
 export { InstancedParticleSystem } from './InstancedParticleSystem'
+
+// 新增：GPU 流体特效
+export { FluidSolver } from './FluidSolver'
+export type { FluidSource, FluidConfig } from './FluidSolver'
+export { spineToFlowSources, palmToFlowSources, boneToFlowSources } from './EnergyFlowField'
+export type { SpineFlowInput, PalmFlowInput, BoneFlowInput } from './EnergyFlowField'
+export { FluidRenderer } from './FluidRenderer'
+export type { FluidRenderConfig } from './FluidRenderer'
+export { GPUWireframeRelief } from './GPUWireframeRelief'
+export type { ReliefConfig } from './GPUWireframeRelief'

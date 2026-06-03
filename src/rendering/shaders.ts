@@ -436,3 +436,441 @@ varying vec2 vUv;
 void main() {
   gl_FragColor = texture2D(tDiffuse, vUv);
 }`
+
+// ──────────────────────────────────────────────
+// 9. 2D 流体模拟器 — Jos Stam 方法 (6 个着色器)
+// ──────────────────────────────────────────────
+
+/** 速度场平流 */
+export const FLUID_ADVECT_VELOCITY_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform sampler2D tSource;
+uniform vec2 uTexelSize;
+uniform float uTimeStep;
+uniform float uDissipation;
+varying vec2 vUv;
+
+void main() {
+  vec2 velocity = texture2D(tVelocity, vUv).xy;
+  vec2 pos = vUv - velocity * uTimeStep * uTexelSize * 20.0;
+  pos = clamp(pos, vec2(0.0), vec2(1.0));
+  gl_FragColor = vec4(texture2D(tSource, pos).xy * uDissipation, 0.0, 1.0);
+}`
+
+/** 速度场粘性扩散 */
+export const FLUID_DIFFUSE_VELOCITY_FRAG = /* glsl */ `
+uniform sampler2D tSource;
+uniform vec2 uTexelSize;
+uniform float uAlpha; // alpha = dx²/(nu*dt)
+uniform float uBeta;  // beta  = 1/(4+alpha)
+varying vec2 vUv;
+
+void main() {
+  vec4 x = texture2D(tSource, vUv);
+  vec4 n = texture2D(tSource, vUv + vec2(0.0, uTexelSize.y));
+  vec4 s = texture2D(tSource, vUv + vec2(0.0, -uTexelSize.y));
+  vec4 e = texture2D(tSource, vUv + vec2(uTexelSize.x, 0.0));
+  vec4 w = texture2D(tSource, vUv + vec2(-uTexelSize.x, 0.0));
+  gl_FragColor = (x + uAlpha * (n + s + e + w)) * uBeta;
+}`
+
+/** 密度场平流 */
+export const FLUID_ADVECT_DENSITY_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform sampler2D tDensity;
+uniform vec2 uTexelSize;
+uniform float uTimeStep;
+uniform float uDissipation;
+varying vec2 vUv;
+
+void main() {
+  vec2 velocity = texture2D(tVelocity, vUv).xy;
+  vec2 pos = vUv - velocity * uTimeStep * uTexelSize * 20.0;
+  pos = clamp(pos, vec2(0.0), vec2(1.0));
+  vec4 density = texture2D(tDensity, pos);
+  gl_FragColor = vec4(density.rgb * uDissipation, 1.0);
+}`
+
+/** 散度计算 */
+export const FLUID_DIVERGENCE_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform vec2 uTexelSize;
+varying vec2 vUv;
+
+void main() {
+  float L = texture2D(tVelocity, vUv + vec2(-uTexelSize.x, 0.0)).x;
+  float R = texture2D(tVelocity, vUv + vec2(uTexelSize.x, 0.0)).x;
+  float T = texture2D(tVelocity, vUv + vec2(0.0, uTexelSize.y)).y;
+  float B = texture2D(tVelocity, vUv + vec2(0.0, -uTexelSize.y)).y;
+  float divergence = 0.5 * ((R - L) + (T - B));
+  gl_FragColor = vec4(divergence, 0.0, 0.0, 1.0);
+}`
+
+/** Jacobi 迭代（压力 Poisson 求解） */
+export const FLUID_JACOBI_FRAG = /* glsl */ `
+uniform sampler2D tPressure;
+uniform sampler2D tDivergence;
+uniform vec2 uTexelSize;
+uniform float uAlpha; // = -dx²
+uniform float uBeta;  // = 1/4
+varying vec2 vUv;
+
+void main() {
+  vec4 n = texture2D(tPressure, vUv + vec2(0.0, uTexelSize.y));
+  vec4 s = texture2D(tPressure, vUv + vec2(0.0, -uTexelSize.y));
+  vec4 e = texture2D(tPressure, vUv + vec2(uTexelSize.x, 0.0));
+  vec4 w = texture2D(tPressure, vUv + vec2(-uTexelSize.x, 0.0));
+  float divergence = texture2D(tDivergence, vUv).x;
+  float pressure = (n.x + s.x + e.x + w.x + uAlpha * divergence) * uBeta;
+  gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0);
+}`
+
+/** 投影（减去压力梯度，使速度无散度） */
+export const FLUID_PROJECT_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform sampler2D tPressure;
+uniform vec2 uTexelSize;
+varying vec2 vUv;
+
+void main() {
+  float L = texture2D(tPressure, vUv + vec2(-uTexelSize.x, 0.0)).x;
+  float R = texture2D(tPressure, vUv + vec2(uTexelSize.x, 0.0)).x;
+  float T = texture2D(tPressure, vUv + vec2(0.0, uTexelSize.y)).x;
+  float B = texture2D(tPressure, vUv + vec2(0.0, -uTexelSize.y)).x;
+  vec2 velocity = texture2D(tVelocity, vUv).xy;
+  vec2 gradient = vec2(R - L, T - B) * 0.5;
+  gl_FragColor = vec4(velocity - gradient, 0.0, 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 10. GPU Rutt/Etra 线框浮雕（替换 CPU Sobel）
+// ──────────────────────────────────────────────
+
+/** Sobel 边缘检测 + 深度位移 */
+export const RELIEF_WIREFRAME_FRAG = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform vec2 uTexelSize;
+uniform float uEdgeStrength;
+uniform float uWireSpacing;   // 线间距（0.003 ~ 0.01）
+uniform float uDisplacement;  // 垂直位移幅度
+uniform float uTime;
+uniform vec3 uLineColor;
+uniform vec3 uGlowColor;
+varying vec2 vUv;
+
+float luminance(vec3 c) {
+  return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+void main() {
+  vec4 original = texture2D(tDiffuse, vUv);
+  float l = luminance(original.rgb);
+
+  // Sobel 边缘强度
+  float tl = luminance(texture2D(tDiffuse, vUv + vec2(-1, -1) * uTexelSize).rgb);
+  float t  = luminance(texture2D(tDiffuse, vUv + vec2( 0, -1) * uTexelSize).rgb);
+  float tr = luminance(texture2D(tDiffuse, vUv + vec2( 1, -1) * uTexelSize).rgb);
+  float l2 = luminance(texture2D(tDiffuse, vUv + vec2(-1,  0) * uTexelSize).rgb);
+  float r2 = luminance(texture2D(tDiffuse, vUv + vec2( 1,  0) * uTexelSize).rgb);
+  float bl = luminance(texture2D(tDiffuse, vUv + vec2(-1,  1) * uTexelSize).rgb);
+  float b  = luminance(texture2D(tDiffuse, vUv + vec2( 0,  1) * uTexelSize).rgb);
+  float br = luminance(texture2D(tDiffuse, vUv + vec2( 1,  1) * uTexelSize).rgb);
+
+  float gx = -tl - 2.0 * l2 - bl + tr + 2.0 * r2 + br;
+  float gy = -tl - 2.0 * t  - tr + bl + 2.0 * b  + br;
+  float edge = sqrt(gx * gx + gy * gy);
+
+  // 亮度驱动的垂直位移
+  float disp = l * uDisplacement;
+
+  // 水平线框遮罩（Rutt/Etra 风格）
+  float wireY = fract(vUv.y / uWireSpacing + disp * 0.1);
+  float wireMask = smoothstep(0.0, 0.02, wireY) * (1.0 - smoothstep(0.04, 0.06, wireY));
+
+  // 垂直线（用 Sobel 水平方向梯度做遮罩）
+  float wireX = fract(vUv.x / uWireSpacing);
+  float vertWire = gx * gx * uEdgeStrength * 3.0;
+  float vertMask = smoothstep(0.0, 0.02, wireX) * (1.0 - smoothstep(0.04, 0.06, wireX));
+
+  // 噪声纹理
+  float noise = hash(vUv * 1000.0 + uTime * 0.1) * 0.15;
+
+  // 合成：边缘 + 水平线 + 噪声
+  float wireIntensity = edge * uEdgeStrength * 0.5
+    + wireMask * 0.3
+    + vertWire * vertMask * 0.4
+    + noise * 0.1;
+
+  // 发光颜色混合
+  vec3 wireColor = mix(uLineColor, uGlowColor, edge * 0.5 + noise);
+
+  gl_FragColor = vec4(mix(original.rgb * 0.3, wireColor, clamp(wireIntensity, 0.0, 1.0)), 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 11. 墨迹扩散 — 密度场注入 + 扩散
+// ──────────────────────────────────────────────
+
+export const INK_SPREAD_FRAG = /* glsl */ `
+uniform sampler2D tDensity;
+uniform sampler2D tVelocity;
+uniform vec2 uTexelSize;
+uniform float uTimeStep;
+uniform float uDissipation;
+varying vec2 vUv;
+
+void main() {
+  vec2 velocity = texture2D(tVelocity, vUv).xy;
+  vec2 pos = vUv - velocity * uTimeStep * uTexelSize * 15.0;
+  pos = clamp(pos, vec2(0.0), vec2(1.0));
+  vec4 density = texture2D(tDensity, pos);
+
+  // 扩散：对墨水做轻微拉普拉斯扩散
+  vec4 n = texture2D(tDensity, vUv + vec2(0.0, uTexelSize.y));
+  vec4 s = texture2D(tDensity, vUv + vec2(0.0, -uTexelSize.y));
+  vec4 e = texture2D(tDensity, vUv + vec2(uTexelSize.x, 0.0));
+  vec4 w = texture2D(tDensity, vUv + vec2(-uTexelSize.x, 0.0));
+  vec4 laplacian = n + s + e + w - 4.0 * density;
+
+  gl_FragColor = vec4((density.rgb + laplacian.rgb * 0.1) * uDissipation, 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 12. 漩涡爆发 — 径向螺旋粒子场
+// ──────────────────────────────────────────────
+
+export const VORTEX_BURST_FRAG = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform vec2 uCenter;
+uniform float uIntensity;
+uniform float uRadius;
+uniform float uTime;
+varying vec2 vUv;
+
+void main() {
+  vec4 original = texture2D(tDiffuse, vUv);
+  float dist = length(vUv - uCenter);
+  float angle = atan(vUv.y - uCenter.y, vUv.x - uCenter.x);
+
+  // 螺旋角度偏移（时间驱动旋转）
+  float spiral = angle + dist * 8.0 + uTime * 2.0;
+
+  // 径向衰减
+  float radialFalloff = exp(-dist / uRadius) * uIntensity;
+
+  // 螺旋纹带
+  float band = abs(sin(spiral * 3.0)) * 0.5 + 0.5;
+  band = smoothstep(0.2, 0.8, band) * radialFalloff;
+
+  // 外层光环
+  float halo = smoothstep(uRadius * 0.8, uRadius, dist) * (1.0 - smoothstep(uRadius, uRadius * 1.1, dist));
+
+  // 颜色：翠绿核心 → 金色边缘
+  vec3 innerColor = vec3(0.1, 0.9, 0.5);
+  vec3 outerColor = vec3(1.0, 0.75, 0.2);
+  vec3 burstColor = mix(innerColor, outerColor, dist / uRadius);
+
+  float alpha = band + halo * 0.6;
+  gl_FragColor = vec4(mix(original.rgb, original.rgb + burstColor * alpha, alpha), 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 13. 光带拖尾 — 粒子位置渲染
+// ──────────────────────────────────────────────
+
+export const LIGHT_TRAIL_FRAG = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform sampler2D tTrail;
+uniform float uIntensity;
+varying vec2 vUv;
+
+void main() {
+  vec4 original = texture2D(tDiffuse, vUv);
+  vec4 trail = texture2D(tTrail, vUv);
+
+  // 光带叠加（Additive 混合）
+  vec3 glow = trail.rgb * uIntensity * 0.6;
+  gl_FragColor = vec4(original.rgb + glow, 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 14. 脉冲光环 — 同心环扩散
+// ──────────────────────────────────────────────
+
+export const PULSE_RING_FRAG = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform vec2 uCenter;
+uniform float uPulsePhase;   // 0~1 脉冲相位
+uniform float uPulseSpeed;
+uniform float uInnerRadius;
+uniform vec3 uPulseColor;
+varying vec2 vUv;
+
+void main() {
+  vec4 original = texture2D(tDiffuse, vUv);
+  float dist = length(vUv - uCenter);
+
+  // 多脉冲环
+  float ring1 = abs(sin(dist * 20.0 - uPulsePhase * 6.28318)) * exp(-dist * 1.5);
+  float ring2 = abs(sin(dist * 35.0 - uPulsePhase * 6.28318 + 1.5)) * exp(-dist * 2.0) * 0.5;
+
+  float alpha = (ring1 + ring2) * smoothstep(uInnerRadius, uInnerRadius + 0.1, dist);
+
+  gl_FragColor = vec4(original.rgb + uPulseColor * alpha * 0.8, 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 15. 流体速度场可视化 — 染色纹理
+// ──────────────────────────────────────────────
+
+export const FLOW_VISUALIZE_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform float uMagnification;
+varying vec2 vUv;
+
+void main() {
+  vec2 velocity = texture2D(tVelocity, vUv).xy;
+  float speed = length(velocity);
+
+  // 颜色映射：低速蓝 → 中速绿 → 高速金
+  vec3 color = mix(
+    vec3(0.1, 0.3, 0.8),
+    vec3(0.1, 0.8, 0.5),
+    smoothstep(0.0, 0.3, speed)
+  );
+  color = mix(color, vec3(1.0, 0.7, 0.1), smoothstep(0.3, 0.7, speed));
+
+  float alpha = speed * uMagnification;
+  gl_FragColor = vec4(color, alpha);
+}`
+
+
+// ──────────────────────────────────────────────
+// 16. 全屏流体叠加合成
+// ──────────────────────────────────────────────
+
+export const FLUID_COMPOSITE_FRAG = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform sampler2D tFluid;
+uniform float uFluidIntensity;
+uniform float uFluidMode; // 0=overlay, 1=additive, 2=screen
+varying vec2 vUv;
+
+void main() {
+  vec4 original = texture2D(tDiffuse, vUv);
+  vec4 fluid = texture2D(tFluid, vUv);
+
+  vec3 result;
+  if (uFluidMode < 0.5) {
+    // Overlay
+    result = mix(original.rgb, original.rgb * 2.0 * fluid.rgb, fluid.a * uFluidIntensity);
+  } else if (uFluidMode < 1.5) {
+    // Additive
+    result = original.rgb + fluid.rgb * fluid.a * uFluidIntensity;
+  } else {
+    // Screen
+    result = 1.0 - (1.0 - original.rgb) * (1.0 - fluid.rgb * uFluidIntensity);
+  }
+
+  gl_FragColor = vec4(result, 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 17. 能量粒子追踪器 — 沿速度场移动
+// ──────────────────────────────────────────────
+
+export const TRACER_UPDATE_FRAG = /* glsl */ `
+uniform sampler2D tPositions;  // RG = position.xy, B = life
+uniform sampler2D tVelocity;
+uniform float uTimeStep;
+uniform float uLifeDecay;
+varying vec2 vUv;
+
+void main() {
+  vec4 posData = texture2D(tPositions, vUv);
+  vec2 pos = posData.xy;
+  float life = posData.z;
+
+  if (life <= 0.0) {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    return;
+  }
+
+  // 采样速度场
+  vec2 velocity = texture2D(tVelocity, pos).xy;
+
+  // 更新位置
+  vec2 newPos = pos + velocity * uTimeStep;
+  newPos = clamp(newPos, vec2(0.001), vec2(0.999));
+
+  // 衰减生命
+  float newLife = life - uLifeDecay;
+
+  gl_FragColor = vec4(newPos, newLife, 0.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 18. 火焰/能量湍流 — Voronoi + 噪声混合
+// ──────────────────────────────────────────────
+
+export const ENERGY_TURBULENCE_FRAG = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform vec2 uCenter;
+uniform float uIntensity;
+uniform float uTime;
+varying vec2 vUv;
+
+float hash2D(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float voronoi(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  float res = 1.0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 b = vec2(float(x), float(y));
+      vec2 point = vec2(hash2D(i + b), hash2D(i + b + vec2(0.5)));
+      vec2 diff = b + point - f;
+      float d = dot(diff, diff);
+      res = min(res, d);
+    }
+  }
+  return sqrt(res);
+}
+
+void main() {
+  vec4 original = texture2D(tDiffuse, vUv);
+  float dist = length(vUv - uCenter) * 2.5;
+
+  // 时间驱动的湍流
+  vec2 turbCoord = vUv * 4.0 + vec2(uTime * 0.2, uTime * 0.15);
+  float turb = voronoi(turbCoord);
+  float turb2 = voronoi(turbCoord * 1.7 + 0.5);
+
+  // 多层湍流
+  float energy = mix(turb, turb2, 0.4) * exp(-dist * 1.2);
+  energy = pow(energy, 1.5) * uIntensity * 0.6;
+
+  // 颜色：低能翠绿 → 高能橙金 → 极热白
+  vec3 lowColor = vec3(0.05, 0.7, 0.3);
+  vec3 midColor = vec3(1.0, 0.5, 0.1);
+  vec3 highColor = vec3(1.0, 0.9, 0.8);
+  vec3 turbColor = mix(lowColor, midColor, smoothstep(0.1, 0.4, energy));
+  turbColor = mix(turbColor, highColor, smoothstep(0.4, 0.7, energy));
+
+  gl_FragColor = vec4(original.rgb + turbColor * energy, 1.0);
+}`
