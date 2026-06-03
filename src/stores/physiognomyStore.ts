@@ -101,7 +101,17 @@ export const usePhysiognomyStore = create<PhysiognomyState>((set, get) => ({
 
   generateFortune: async () => {
     const { spineMetrics, palmStars, boneMetrics } = get()
-    if (!spineMetrics || !palmStars || !boneMetrics) return
+    if (!spineMetrics || !palmStars || !boneMetrics) {
+      const missing: string[] = []
+      if (!spineMetrics) missing.push('脊柱体态')
+      if (!palmStars) missing.push('手相')
+      if (!boneMetrics) missing.push('骨相')
+      set({
+        fortuneLoading: false,
+        fortuneError: `数据未就绪：${missing.join('、')}未检测到。请确保身体、手部和面部都在摄像头范围内。`,
+      })
+      return
+    }
 
     // 给骨相填入一些默认区域（如果还没有的话）
     const bone = boneMetrics.regions.length === 0
@@ -122,12 +132,15 @@ export const usePhysiognomyStore = create<PhysiognomyState>((set, get) => ({
     set({ fortuneLoading: true, fortuneError: null })
 
     try {
+      console.log('[MIMO] 🚀 开始请求AI运势...')
       const fortune = await fetchMimoFortune(spineMetrics, palmStars, bone)
+      console.log('[MIMO] ✅ AI运势生成成功, overall.score=', fortune.overall?.score)
       set({ fortune, fortuneLoading: false })
     } catch (err) {
-      console.warn('[MIMO] 运势生成失败，回退到本地模板:', err)
+      console.warn('[MIMO] ❌ API调用失败，回退到本地模板:', err)
       // 回退到纯前端模板生成
       const fortune = generateFortuneInterpretation(spineMetrics, palmStars, bone)
+      console.log('[MIMO] 📋 已使用本地模板生成运势')
       set({ fortune, fortuneLoading: false, fortuneError: null })
     }
   },

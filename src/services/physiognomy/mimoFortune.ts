@@ -104,6 +104,20 @@ function buildSnapshot(
 function buildPrompt(snapshot: PhysiognomySnapshot): string {
   const s = JSON.stringify(snapshot, null, 2)
 
+  // 随机种子：强制模型每次生成不同内容
+  const seed = Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+  const styleOptions = [
+    '今天用"武侠小说旁白"的语气',
+    '今天用"脱口秀演员"的语气',
+    '今天用"温柔中医师"的语气',
+    '今天用"毒舌闺蜜"的语气',
+    '今天用"玄幻小说说书人"的语气',
+    '今天用"综艺节目主持人"的语气',
+    '今天用"禅意诗人"的语气',
+    '今天用"东北大爷"的语气',
+  ]
+  const style = styleOptions[Math.floor(Math.random() * styleOptions.length)]
+
   // 数据异常提示：当所有评分接近默认值，说明无真人检测
   const isNoFace = snapshot.bone.overallScore >= 49 && snapshot.bone.overallScore <= 51
   const dataWarning = isNoFace
@@ -112,7 +126,9 @@ function buildPrompt(snapshot: PhysiognomySnapshot): string {
 
   return `你是「体态游乐场」的AI相术大师。你的输出分两个独立部分。两部分之间用"---"的风格切换：前半段是幽默段子手，后半段是专业养生顾问。不要混淆两种语气。
 
-## 体态检测数据
+${style}撰运势解读部分。
+
+## 体态检测数据（本次运势ID: ${seed}）
 ${s}${dataWarning}
 
 ## 第一部分：运势段子（幽默风趣，像朋友聊天）
@@ -176,7 +192,8 @@ ${s}${dataWarning}
 - 如果数据接近正常范围不要强行制造问题
 - 三个 treatmentPlan 必须各有针对性，不能三份复制粘贴
 - luckyElement 从 金/木/水/火/土 中随机选
-- luckyColor 从 翡翠绿/朱砂红/琥珀黄/孔雀蓝/玄铁灰 中随机选`
+- luckyColor 从 翡翠绿/朱砂红/琥珀黄/孔雀蓝/玄铁灰 中随机选
+- 本次运势ID: ${seed} — 确保每次生成的内容与之前不同`
 }
 
 // ============================================================
@@ -209,7 +226,7 @@ export async function fetchMimoFortune(
             content: prompt,
           },
         ],
-        temperature: 0.85,
+        temperature: 1.0,
         max_tokens: 4000,
       }),
       signal: controller.signal,

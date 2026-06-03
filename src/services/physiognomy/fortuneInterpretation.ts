@@ -9,7 +9,10 @@ import type { SpineMetrics, PalmStarsMetrics, BonePhysiognomyMetrics, FortuneInt
 // ============================================================
 
 function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+  // 使用 time-based seed 增加多样性，避免连续相同
+  const seed = (Date.now() % 100000) / 100000
+  const idx = Math.floor((seed * arr.length + Math.random() * 0.3 * arr.length) % arr.length)
+  return arr[idx]
 }
 
 function emptyPlan(): TreatmentPlan {
