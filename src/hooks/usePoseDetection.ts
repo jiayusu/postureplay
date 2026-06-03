@@ -20,7 +20,7 @@ import {
   METRICS_COMPUTE_INTERVAL,
   INFERENCE_TIME_WINDOW,
 } from '@/constants/config'
-import type { Keypoint, PostureSnapshot } from '@/types'
+import type { PostureSnapshot } from '@/types'
 
 /**
  * 启动姿态检测主循环。
@@ -109,8 +109,11 @@ export function usePoseDetection(videoRef: React.RefObject<HTMLVideoElement | nu
             const snapshot: PostureSnapshot = {
               sessionId: '', // sessionStore 内部自动注入
               timestamp: now,
-              keypoints,
-              metrics,
+              spineAngle: metrics.spineAngle,
+              shoulderLevelDiff: metrics.shoulderLevelDiff,
+              headForwardAngle: metrics.headForwardAngle,
+              breathMode: metrics.breathMode,
+              emotionalState: metrics.emotionalState,
               isNeutral: metrics.isNeutral,
             }
 

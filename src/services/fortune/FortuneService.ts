@@ -25,11 +25,11 @@ const TEMPLATES: FortuneTemplate[] = [
       '今日尾椎电力满格！中立位占比冲到 {score} 分，是近 {day} 天最佳。下午开会记得保持这份气场，你的尾巴比谁都骄傲 ✨',
     highlight: '近{day}天最佳姿态',
     tip: '保持今日节奏，每 45 分钟站起来活动一下',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, isPeakToday, _avgNeutralRatio) {
       if (trend !== 'up' || !isPeakToday) return 0
       let score = 10
-      if (avgNeutralRatio >= 0.5) score += 8
-      else if (avgNeutralRatio >= 0.35) score += 5
+      if (_avgNeutralRatio >= 0.5) score += 8
+      else if (_avgNeutralRatio >= 0.35) score += 5
       else score += 2
       return score
     },
@@ -41,10 +41,10 @@ const TEMPLATES: FortuneTemplate[] = [
       '你的体态正在悄悄进化！今天中立位比例再创新高，尾巴评分 {score}。{highlight}，继续保持，你的脊椎会感谢你的 🌱',
     highlight: '稳步进步中',
     tip: '尝试在站立时微微收腹，效果更好',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, isPeakToday, _avgNeutralRatio) {
       if (trend !== 'up' || !isPeakToday) return 0
-      if (avgNeutralRatio >= 0.5) return 7
-      if (avgNeutralRatio >= 0.35) return 9
+      if (_avgNeutralRatio >= 0.5) return 7
+      if (_avgNeutralRatio >= 0.35) return 9
       return 6
     },
   },
@@ -57,10 +57,10 @@ const TEMPLATES: FortuneTemplate[] = [
       '虽然今天不是最佳状态，但你的 {day} 日趋势稳稳向上。评分 {score} 分，{highlight}。偶尔的波动只是身体在调试 📈',
     highlight: '整体趋势向好',
     tip: '注意肩膀不要耸起，放松斜方肌',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, isPeakToday, _avgNeutralRatio) {
       if (trend !== 'up' || isPeakToday) return 0
-      if (avgNeutralRatio >= 0.45) return 10
-      if (avgNeutralRatio >= 0.35) return 7
+      if (_avgNeutralRatio >= 0.45) return 10
+      if (_avgNeutralRatio >= 0.35) return 7
       return 5
     },
   },
@@ -71,7 +71,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '尾巴运势 {score} 分，虽然今天有些小波动，但近 {day} 天整体呈上升趋势。{highlight}。身体正在找到它的节奏 🎵',
     highlight: '温和上升通道中',
     tip: '多做肩颈拉伸，办公族的必修课',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, isPeakToday, _avgNeutralRatio) {
       if (trend !== 'up' || isPeakToday) return 0
       return 5
     },

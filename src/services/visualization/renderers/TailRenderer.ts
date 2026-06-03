@@ -32,7 +32,6 @@ const ANCHOR_CORE_RADIUS = 5
 
 /** 尾巴线宽范围 */
 const TAIL_LINE_WIDTH_START = 12
-const TAIL_LINE_WIDTH_END = 2
 
 export class TailRenderer implements RendererInterface {
   private canvas: HTMLCanvasElement
@@ -49,7 +48,6 @@ export class TailRenderer implements RendererInterface {
   private particles: Particle[] = []
   private basePosition: { x: number; y: number } = { x: 0, y: 0 }
   private currentMetrics: PostureMetrics | null = null
-  private _currentKeypoints: Keypoint[] | null = null
   private frameCount = 0
 
   constructor(canvas: HTMLCanvasElement) {
@@ -77,7 +75,6 @@ export class TailRenderer implements RendererInterface {
 
   updatePose(metrics: PostureMetrics, keypoints: Keypoint[]): void {
     this.currentMetrics = metrics
-    this._currentKeypoints = keypoints
     this.frameCount++
 
     // 保存当前 segments 作为"上一帧"
@@ -191,7 +188,6 @@ export class TailRenderer implements RendererInterface {
     this.previousSegments = null
     this.particles = []
     this.currentMetrics = null
-    this._currentKeypoints = null
   }
 
   // ---- 私有渲染方法 ----

@@ -15,7 +15,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useCameraStore } from '@/stores/cameraStore'
-import { LIGHTING_THRESHOLD } from '@/constants/config'
+// LIGHTING_THRESHOLD reserved for future lighting analysis
 import { getCameraService } from '@/services/camera'
 
 /**

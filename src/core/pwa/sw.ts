@@ -12,14 +12,10 @@ import { registerSW } from 'virtual:pwa-register'
 /** 新版本就绪回调类型 */
 type UpdateCallback = () => void
 
-/** 更新已安装回调类型 */
-type InstalledCallback = () => void
-
 /** 注册成功回调类型 */
 type RegisteredCallback = () => void
 
 let onUpdateAvailable: UpdateCallback | null = null
-let onUpdateInstalled: InstalledCallback | null = null
 let onRegistered: RegisteredCallback | null = null
 
 /**
@@ -37,7 +33,7 @@ export function initServiceWorker() {
       // 首次离线就绪，静默处理（不需要用户刷新）
     },
     // SW 注册成功
-    onRegisteredSW(swScriptUrl, registration) {
+    onRegisteredSW(_swScriptUrl, registration) {
       onRegistered?.()
       console.log('[PWA] Service Worker 注册成功')
       if (registration) {
@@ -62,13 +58,6 @@ export function initServiceWorker() {
  */
 export function onUpdateReady(fn: UpdateCallback) {
   onUpdateAvailable = fn
-}
-
-/**
- * 设置更新安装完成回调。
- */
-export function onInstallComplete(fn: InstalledCallback) {
-  onUpdateInstalled = fn
 }
 
 /**

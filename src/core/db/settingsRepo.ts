@@ -44,7 +44,7 @@ export async function getAllSettings(): Promise<AppSettings> {
   const result: AppSettings = { ...DEFAULT_SETTINGS }
 
   for (const { key, value } of all) {
-    ;(result as Record<string, unknown>)[key] = value
+    ;(result as unknown as Record<string, unknown>)[key] = value
   }
 
   return result

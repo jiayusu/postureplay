@@ -64,13 +64,7 @@ function computeAngle(
   return Math.acos(Math.max(-1, Math.min(1, cos))) * (180 / Math.PI)
 }
 
-/** 线角度（弧度，相对于水平线） */
-function _lineAngle(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-): number {
-  return Math.atan2(b.y - a.y, b.x - a.x)
-}
+// _lineAngle removed - unused helper
 
 /** 值钳位 */
 function clamp(v: number, min: number, max: number): number {

@@ -12,7 +12,6 @@
 import {
   extractSpineLine,
   cubicBezierSmooth,
-  waterRippleOffset,
 } from './bezierUtils'
 import {
   spawnParticles,
@@ -30,13 +29,7 @@ import type { Keypoint } from '../types'
 
 const NODE_LABELS = ['百会', '天柱 C7', '灵台 T12', '命门 L5', '尾闾'] as const
 
-const NODE_COLORS = {
-  healthy: '#ffd700',
-  blocked: '#888',
-  diminished: '#666',
-} as const
-
-const VINE_COLORS = {
+const VINE_COLORS: Record<string, { stem: string; leaf: string; flower: string }> = {
   flowing: { stem: '#ffd700', leaf: '#66ff88', flower: '#ffaa44' },
   blocked: { stem: '#666688', leaf: '#556644', flower: '#886644' },
   diminished: { stem: '#555577', leaf: '#445544', flower: '#775533' },
@@ -71,11 +64,8 @@ export function renderSpineTree(
   const blockedAt = spineEnergy?.blockedAt ?? null
 
   // 侧弯偏移
-  const spineNodes = rawLine.map((pt, i) => {
-    const ripple = lateralCurvature > 0.15
-      ? waterRippleOffset(pt.y, lateralCurvature * 80, time, 0.02)
-      : 0
-    return { x: pt.x + ripple, y: pt.y }
+  const spineNodes = rawLine.map((pt, _i) => {
+    return { x: pt.x, y: pt.y }
   })
 
   const smoothSpine = cubicBezierSmooth(spineNodes, 0.35)
@@ -462,7 +452,7 @@ function drawScoreLabel(
   ctx: CanvasRenderingContext2D,
   w: number,
   spineMetrics: SpineMetrics | null,
-  state: string,
+  _state: string,
   _time: number,
 ): void {
   if (!spineMetrics) return

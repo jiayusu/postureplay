@@ -64,7 +64,7 @@ export function useVisualization(
   // ── 模式切换 → 风格 ──
   useEffect(() => {
     const svc = getVisualizationService()
-    const modeToStyle: Record<string, string> = {
+    const modeToStyle: Record<string, 'full' | 'simple' | 'minimal'> = {
       work: 'full',
       casual: 'simple',
       meditation: 'minimal',

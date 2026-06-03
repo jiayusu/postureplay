@@ -11,9 +11,6 @@ import { TailRenderer } from './renderers/TailRenderer'
 
 export class VisualizationService implements VisualizationServiceInterface {
   private renderer: TailRenderer | null = null
-  // canvas ref kept for potential future use
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private canvas: HTMLCanvasElement | null = null
   private video: HTMLVideoElement | null = null
 
   /** 绑定 Canvas 和 Video 元素 */
@@ -21,7 +18,6 @@ export class VisualizationService implements VisualizationServiceInterface {
     if (this.renderer) {
       this.renderer.dispose()
     }
-    this.canvas = canvas
     this.video = video
     this.renderer = new TailRenderer(canvas)
 
@@ -82,7 +78,6 @@ export class VisualizationService implements VisualizationServiceInterface {
   dispose(): void {
     this.renderer?.dispose()
     this.renderer = null
-    this.canvas = null
     this.video = null
   }
 }

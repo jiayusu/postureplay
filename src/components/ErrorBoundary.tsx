@@ -86,7 +86,7 @@ export default class ErrorBoundary extends Component<
     window.location.reload()
   }
 
-  handleClearAndReset = async (): void => {
+  handleClearAndReset = async (): Promise<void> => {
     await clearAllIndexedDB()
     clearLocalStorage()
 

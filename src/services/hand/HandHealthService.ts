@@ -22,7 +22,7 @@ import {
   computeJointFlexibilityScore,
   detectPalmLines,
   computeOverallHealthScore,
-  computeSymmetryScore,
+  _computeSymmetryScore,
 } from './palmAnalysis'
 
 export class HandHealthService implements HandHealthServiceInterface {
@@ -105,7 +105,7 @@ export class HandHealthService implements HandHealthServiceInterface {
     leftHand: HandHealthMetrics | null,
     rightHand: HandHealthMetrics | null,
   ): CombinedHandMetrics {
-    const symmetryScore = computeSymmetryScore(leftHand, rightHand)
+    const symmetryScore = _computeSymmetryScore(leftHand, rightHand)
 
     // 综合评分
     let overallScore = 70

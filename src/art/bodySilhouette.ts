@@ -57,20 +57,6 @@ const POSE_CONNECTIONS: Connection[] = [
   [28, 30], [28, 32], [30, 32],
 ]
 
-/** 身体轮廓连线 (用于填充区域) */
-const BODY_OUTLINE: Connection[] = [
-  // 头
-  [0, 4], [4, 5], [5, 6], [6, 8], [8, 7], [7, 3], [3, 2], [2, 1], [1, 0],
-  // 左半身
-  [11, 13], [13, 15], [15, 17], [17, 19],
-  [11, 23], [23, 25], [25, 27], [27, 31],
-  // 右半身
-  [12, 14], [14, 16], [16, 18], [18, 20],
-  [12, 24], [24, 26], [26, 28], [28, 32],
-  // 胯
-  [23, 24],
-]
-
 /** 上半身/躯干轮廓 — 用于 torso 填充区域 */
 const TORSO_HULL_INDICES = [
   0, 1, 2, 3, 7, 8, 6, 5, 4,   // 头
@@ -191,7 +177,7 @@ export function renderBodySilhouette(
   destHeight: number,
   time: number,
   _spineEnergy: unknown,
-  options: BodySilhouetteOptions = {},
+  options?: BodySilhouetteOptions,
 ): void {
   const opts = { ...DEFAULT_OPTIONS, ...options }
 

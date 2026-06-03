@@ -18,7 +18,6 @@ import {
   DEGRADE_LEVEL1_FPS,
   DEGRADE_LEVEL2_FPS,
   DEGRADE_LEVEL3_FPS,
-  DEGRADE_LEVEL2_POSE_FPS,
   DEGRADE_LEVEL1_DURATION,
   DEGRADE_LEVEL2_DURATION,
   DEGRADE_LEVEL3_DURATION,
@@ -31,12 +30,7 @@ import { getMemoryStats } from '@/core/utils/memoryMonitor'
 import type { AppMode, DegradationLevel } from '@/types'
 
 // ---- 降级配置映射 ----
-
-const LEVEL_DOWN_FPS: Record<string, number> = {
-  level1: DEGRADE_LEVEL1_FPS,
-  level2: DEGRADE_LEVEL2_FPS,
-  level3: DEGRADE_LEVEL3_FPS,
-}
+// LEVEL_DOWN_FPS reserved for future degradation mapping
 
 const LEVEL_DOWN_DURATION: Record<string, number> = {
   level1: DEGRADE_LEVEL1_DURATION,

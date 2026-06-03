@@ -136,7 +136,7 @@ const InstallPrompt: React.FC = () => {
 
     try {
       await deferredPrompt.prompt()
-      const { outcome } = deferredPrompt.userChoice
+      const { outcome } = await deferredPrompt.userChoice
       if (outcome === 'accepted') {
         localStorage.setItem(STORAGE_KEY_INSTALLED, 'true')
         setVisible(false)

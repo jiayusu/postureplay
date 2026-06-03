@@ -137,7 +137,7 @@ function drawBaguaGrid(
   x: number, y: number,
   w: number, h: number,
   regions: PalmStarsMetrics['regions'],
-  time: number,
+  _time: number,
 ): void {
   ctx.save()
   const rows = 3, cols = 3
@@ -199,7 +199,7 @@ function drawThenarParticles(
   ctx: CanvasRenderingContext2D,
   handLeft: number, handTop: number,
   handW: number, handH: number,
-  venusMountFullness: number,
+  _venusMountFullness: number,
   vitality: number,
   time: number,
 ): void {
@@ -209,7 +209,7 @@ function drawThenarParticles(
 
   if (time - lastParticleSpawn > 0.15) {
     lastParticleSpawn = time
-    const count = Math.floor(venusMountFullness * 8)
+    const count = Math.floor(_venusMountFullness * 8)
     const color = vitality >= 50 ? '#44ff66' : '#778855'
     const newP = spawnParticles(count, thenarCx, thenarCy, handW * 0.18, [color, '#88ffaa', '#66cc44'], 2.5, 0.4)
     palmParticles = updateParticles([...palmParticles, ...newP], 0, 0, PALM_PARTICLE_MAX)
@@ -223,7 +223,7 @@ function drawBoneGlow(
   ctx: CanvasRenderingContext2D,
   landmarks: Array<{ x: number; y: number; z?: number }>,
   w: number, h: number,
-  vitality: number,
+  _vitality: number,
   _time: number,
 ): void {
   ctx.save()
@@ -277,7 +277,7 @@ function drawJointPulses(
 function drawNoHandHint(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
-  vitality: number,
+  _vitality: number,
   _time: number,
 ): void {
   ctx.save()
@@ -288,7 +288,7 @@ function drawNoHandHint(
   ctx.globalAlpha = 0.4
   ctx.fillText('请将手掌面向摄像头', w / 2, h / 2)
 
-  const hint = vitality >= 50 ? '掌色平和，运势稳健' : '掌心暗淡，气血需调'
+  const hint = _vitality >= 50 ? '掌色平和，运势稳健' : '掌心暗淡，气血需调'
   ctx.fillText(hint, w / 2, h / 2 + 24)
 
   ctx.restore()

@@ -17,7 +17,8 @@ interface EyeNoseOverlayProps {
   videoRef: React.RefObject<HTMLVideoElement | null>
 }
 
-export function EyeNoseOverlay({ videoRef }: EyeNoseOverlayProps) {
+export function EyeNoseOverlay(_props: EyeNoseOverlayProps) {
+  // videoRef kept in props for future use
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animFrameRef = useRef<number>(0)
   const canvasReadyRef = useRef(false)

@@ -23,7 +23,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCameraSetup } from '@/hooks/useCameraSetup'
 import { usePoseDetection } from '@/hooks/usePoseDetection'
 import { useEyeDetection } from '@/hooks/useEyeDetection'
-import { useVisualization } from '@/hooks/useVisualization'
+
 import { useDegradationController } from '@/hooks/useDegradationController'
 import { useCameraStore } from '@/stores/cameraStore'
 import { usePostureStore } from '@/stores/postureStore'
