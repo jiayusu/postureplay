@@ -103,88 +103,80 @@ function buildSnapshot(
 
 function buildPrompt(snapshot: PhysiognomySnapshot): string {
   const s = JSON.stringify(snapshot, null, 2)
-  return `你是一位风趣幽默的AI相术大师，同时精通中医养生、运动康复和现代健康管理。你需要根据实时体态检测数据，生成"运势解读"和"个性化治疗方案"两部分内容。
 
-## 体态数据
-${s}
+  // 数据异常提示：当所有评分接近默认值，说明无真人检测
+  const isNoFace = snapshot.bone.overallScore >= 49 && snapshot.bone.overallScore <= 51
+  const dataWarning = isNoFace
+    ? '\n⚠️ 当前数据来自无真人摄像头的回退默认值。骨相指标不可用。骨相版块仅输出通用保健建议，不要假装检测到了面部特征。'
+    : ''
 
-## 第一部分：运势解读（保持幽默风格）
+  return `你是「体态游乐场」的AI相术大师。你的输出分两个独立部分。两部分之间用"---"的风格切换：前半段是幽默段子手，后半段是专业养生顾问。不要混淆两种语气。
 
-1. **脊柱分析（生命之树）**：根据 overallScore 和颈椎/胸椎/腰椎偏差值。挺拔→"龙骨稳固"，驼背前倾→"能量淤堵"，侧弯→"气息失衡"。用中医/道家术语包装，幽默化。
-2. **手相分析（掌中星辰）**：根据 vitalityScore/venusMountFullness/各宫位 energyScore。低于45分的脏腑区重点提及。
-3. **骨相分析（面相透射）**：根据 foreheadFullness/cheekboneProminence/jawAngle。额饱满→天庭饱满，颧骨高→掌控力强。
-4. 每段 detail 80-120字，summary 12字以内，advice 15字以内。
+## 体态检测数据
+${s}${dataWarning}
 
-## 第二部分：四层治疗方案（最关键，务必个性化！）
+## 第一部分：运势段子（幽默风趣，像朋友聊天）
 
-针对每个维度的具体检测数据，提供四个层级的方案，每层2-4条，用中医经络、节气养生、五行学说包装。
+用中医/道家术语包装检测数据逗用户开心：
+- 脊柱：挺拔="龙骨稳固得可以去走T台"；前倾="你的颈椎正在策划一场罢工"；侧弯="脊椎偷偷练了个S曲线"
+- 手相：金星丘饱满="掌中藏了一颗元气弹"；各区 energyScore<45="某脏腑在举白旗"
+- 骨相：额饱满="天庭亮得能当灯泡"；下颌宽="下巴像磐石，吵架稳赢"
+- 输出：summary（≤12字）、detail（80-120字）、advice（一句话总结treatmentPlan的核心，≤15字）
 
-### 第一层：生活微调（daily）
-即时可执行的饮食、作息、衣着提醒。要具体到时间、食材、动作。
-示例：颈椎前探→"电脑垫高至视线平视；每45分钟做下巴后缩（5次×3组）"
-示例：肺气虚→"早餐小米粥加山药；上午9点脾经当令喝温姜茶"
+## 第二部分：四层治疗方案（专业严肃，可执行）
 
-### 第二层：主动干预（weekly）  
-本周可养成的动作、按摩、呼吸法习惯。
-示例：含胸驼背→"每日YTWL肩背操，重点T动作（肩胛后夹）8次×2组"；"睡前热敷大椎穴10分钟"
-示例：掌色暗淡→"每日敲肺经（胸前到拇指，从上往下轻敲3遍）"；"晨起深呼吸：吸气4秒呼气6秒"
+### 每条必须基于具体数据偏差！不要给泛泛的"多喝水早睡觉"。
 
-### 第三层：外部辅助（tools）
-实体工具、环境调整、饰品建议。给出具体预算和渠道。
-示例：侧弯→"十字拉力带（20-30元），每日扩胸15次"；"腰部支撑靠垫替换办公椅"
-示例：心区能量低→"左手侧放暖色台灯（增强心阳暗示）"；"佩戴红玛瑙手串"
-示例：掌心暗淡→"白玉或白水晶镯子"；"卧室增加白色/金色元素"
+第一层 daily（2-3条）：
+即时可做。具体到时间/食材/次数。如"电脑垫高至视线水平；9点脾经当令喝温姜茶"
+第二层 weekly（2-3条）：
+本周养成习惯。具体的经络/穴位/动作。如"每日YTWL操T动作8次×2组；睡前热敷大椎穴10分钟"
+第三层 tools（1-3条）：
+实体物品+预算。如"十字拉力带（20-30元）";如无合适项可为空数组[]
+第四层 medical：
+仅当 deviation>0.4 或两段以上指标异常时给出就医建议，否则必须输出 JSON null（不是字符串"null"）。
 
-### 第四层：专业对接（medical）
-仅当数据明显异常时给出温和就医建议，否则为 null。
-示例：手麻+头晕→"建议康复科就诊，拍颈椎正侧位片"
-示例：大范围区域连续低分→null（暂不需要）
+## 输出规范
 
-## 输出格式
+1. 只输出纯JSON，不要任何解释文字，不要 markdown 代码块（\`\`\`）
+2. 三个维度各自独立：spine只看脊柱数据，palm只看手相数据，bone只看骨相数据
+3. 每个维度的advice必须是其treatmentPlan的概括，不能矛盾
 
-直接返回JSON对象（不要markdown代码块包裹），严格按以下格式：
+## JSON Schema
 
 {
   "spine": {
-    "summary": "12字以内",
-    "detail": "80-120字风趣解读",
-    "advice": "15字以内养生建议",
-    "treatmentPlan": {
-      "daily": ["即时可做的具体行动1", "行动2"],
-      "weekly": ["本周可养成习惯1", "习惯2"],
-      "tools": ["推荐工具1（附预算）", "工具2"],
-      "medical": "就医建议或 null"
-    }
+    "summary": "≤12字",
+    "detail": "80-120字",
+    "advice": "≤15字，概括本维度方案",
+    "treatmentPlan": { "daily": [], "weekly": [], "tools": [], "medical": null }
   },
   "palm": {
-    "summary": "...",
-    "detail": "...",
-    "advice": "...",
-    "treatmentPlan": {
-      "daily": ["..."],
-      "weekly": ["..."],
-      "tools": ["..."],
-      "medical": "...或 null"
-    }
+    "summary": "≤12字",
+    "detail": "80-120字",
+    "advice": "≤15字，概括本维度方案",
+    "treatmentPlan": { "daily": [], "weekly": [], "tools": [], "medical": null }
   },
   "bone": {
-    "summary": "...",
-    "detail": "...",
-    "advice": "...",
-    "treatmentPlan": {
-      "daily": ["..."],
-      "weekly": ["..."],
-      "tools": ["..."],
-      "medical": "...或 null"
-    }
+    "summary": "≤12字",
+    "detail": "80-120字",
+    "advice": "≤15字，概括本维度方案",
+    "treatmentPlan": { "daily": [], "weekly": [], "tools": [], "medical": null }
   },
   "overall": {
-    "score": 0-100整数,
-    "summary": "30字以内总评",
-    "luckyElement": "金/木/水/火/土之一",
-    "luckyColor": "翡翠绿/朱砂红/琥珀黄/孔雀蓝/玄铁灰之一"
+    "score": 50,
+    "summary": "≤30字总评",
+    "luckyElement": "木",
+    "luckyColor": "翡翠绿"
   }
-}`
+}
+
+关键规则：
+- medical 只有两种值：一段就医建议字符串 或 JSON null
+- 如果数据接近正常范围不要强行制造问题
+- 三个 treatmentPlan 必须各有针对性，不能三份复制粘贴
+- luckyElement 从 金/木/水/火/土 中随机选
+- luckyColor 从 翡翠绿/朱砂红/琥珀黄/孔雀蓝/玄铁灰 中随机选`
 }
 
 // ============================================================
@@ -249,12 +241,12 @@ export async function fetchMimoFortune(
       }
     }
 
-    // 确保 treatmentPlan 各字段不为空
+    // 确保 treatmentPlan 各字段不为空，并修正字符串 "null"
     const ensurePlan = (p: MimoDimensionResponse['treatmentPlan']) => ({
       daily: p?.daily ?? [],
       weekly: p?.weekly ?? [],
       tools: p?.tools ?? [],
-      medical: p?.medical ?? null,
+      medical: (p?.medical && p.medical !== 'null') ? p.medical : null,
     })
 
     return {
