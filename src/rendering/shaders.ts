@@ -874,3 +874,308 @@ void main() {
 
   gl_FragColor = vec4(original.rgb + turbColor * energy, 1.0);
 }`
+
+
+// ──────────────────────────────────────────────
+// 19. Curl Noise — 速度场漩涡扰动 (Taichi 风格)
+// ──────────────────────────────────────────────
+
+/** 计算 2D 旋度 curl(velocity) */
+export const CURL_CALC_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform vec2 uTexelSize;
+varying vec2 vUv;
+
+void main() {
+  float vx_top = texture2D(tVelocity, vUv + vec2(0.0, uTexelSize.y)).x;
+  float vx_bot = texture2D(tVelocity, vUv + vec2(0.0, -uTexelSize.y)).x;
+  float vy_right = texture2D(tVelocity, vUv + vec2(uTexelSize.x, 0.0)).y;
+  float vy_left = texture2D(tVelocity, vUv + vec2(-uTexelSize.x, 0.0)).y;
+  float curl = (vy_right - vy_left) - (vx_top - vx_bot);
+  gl_FragColor = vec4(curl, 0.0, 0.0, 1.0);
+}`
+
+/** Vorticity Confinement — 增强漩涡保持 */
+export const VORTICITY_CONFINEMENT_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform sampler2D tCurl;
+uniform vec2 uTexelSize;
+uniform float uStrength; // 0.0 ~ 2.0
+varying vec2 vUv;
+
+void main() {
+  vec2 velocity = texture2D(tVelocity, vUv).xy;
+
+  float curl_center = texture2D(tCurl, vUv).x;
+  float curl_left   = texture2D(tCurl, vUv + vec2(-uTexelSize.x, 0.0)).x;
+  float curl_right  = texture2D(tCurl, vUv + vec2(uTexelSize.x, 0.0)).x;
+  float curl_top    = texture2D(tCurl, vUv + vec2(0.0, uTexelSize.y)).x;
+  float curl_bottom = texture2D(tCurl, vUv + vec2(0.0, -uTexelSize.y)).x;
+
+  float curl_grad_x = (abs(curl_right) - abs(curl_left)) * 0.5;
+  float curl_grad_y = (abs(curl_top) - abs(curl_bottom)) * 0.5;
+  float curl_grad_len = length(vec2(curl_grad_x, curl_grad_y)) + 1e-5;
+
+  vec2 curl_force = uStrength * vec2(curl_grad_y, -curl_grad_x) / curl_grad_len * abs(curl_center);
+
+  gl_FragColor = vec4(velocity + curl_force, 0.0, 1.0);
+}`
+
+/** 3D Curl Noise — 用于生成无散度速度场 */
+export const CURL_NOISE_FRAG = /* glsl */ `
+uniform vec2 uOffset;
+uniform float uScale;
+uniform float uStrength;
+varying vec2 vUv;
+
+// Simplex-like 3D noise (简化版)
+float hash(float n) { return fract(sin(n) * 43758.5453123); }
+float noise(vec3 x) {
+  vec3 p = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  float n = p.x + p.y * 57.0 + 113.0 * p.z;
+  return mix(mix(mix(hash(n), hash(n+1.0), f.x),
+                 mix(hash(n+57.0), hash(n+58.0), f.x), f.y),
+             mix(mix(hash(n+113.0), hash(n+114.0), f.x),
+                 mix(hash(n+170.0), hash(n+171.0), f.x), f.y), f.z);
+}
+
+float fbm(vec3 p) {
+  float f = 0.0, amp = 0.5;
+  for (int i = 0; i < 3; i++) {
+    f += amp * noise(p);
+    p *= 2.0;
+    amp *= 0.5;
+  }
+  return f;
+}
+
+void main() {
+  vec3 pos = vec3(vUv * uScale + uOffset, 0.0);
+
+  // 数值微分求 curl of noise
+  float eps = 0.01;
+  float nx = fbm(pos + vec3(eps, 0.0, 0.3));
+  float px = fbm(pos - vec3(eps, 0.0, 0.3));
+  float ny = fbm(pos + vec3(0.0, eps, 0.6));
+  float py = fbm(pos - vec3(0.0, eps, 0.6));
+
+  vec2 curl = vec2((ny - py), -(nx - px)) / (2.0 * eps) * uStrength;
+  gl_FragColor = vec4(curl, 0.0, 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 20. Reaction-Diffusion — Gray-Scott 图灵斑纹
+// ──────────────────────────────────────────────
+
+export const REACTION_DIFFUSION_FRAG = /* glsl */ `
+uniform sampler2D tChemicals;  // RG = U, B = V
+uniform vec2 uTexelSize;
+uniform float uFeed;      // feed rate (0.02~0.06)
+uniform float uKill;      // kill rate (0.04~0.07)
+uniform float uDu;        // diffusion rate U
+uniform float uDv;        // diffusion rate V
+varying vec2 vUv;
+
+void main() {
+  vec4 center = texture2D(tChemicals, vUv);
+  float u = center.r;
+  float v = center.g;
+
+  // 5-point Laplacian
+  vec4 n = texture2D(tChemicals, vUv + vec2(0.0, uTexelSize.y));
+  vec4 s = texture2D(tChemicals, vUv + vec2(0.0, -uTexelSize.y));
+  vec4 e = texture2D(tChemicals, vUv + vec2(uTexelSize.x, 0.0));
+  vec4 w = texture2D(tChemicals, vUv + vec2(-uTexelSize.x, 0.0));
+
+  float lu = n.r + s.r + e.r + w.r - 4.0 * u;
+  float lv = n.g + s.g + e.g + w.g - 4.0 * v;
+
+  float reaction = u * v * v;
+  float du = uDu * lu - reaction + uFeed * (1.0 - u);
+  float dv = uDv * lv + reaction - (uFeed + uKill) * v;
+
+  gl_FragColor = vec4(clamp(du, 0.0, 1.0), clamp(dv, 0.0, 1.0), 0.0, 1.0);
+}`
+
+/** Reaction-Diffusion 可视化 — 将化学浓度映射为颜色 */
+export const REACTION_DIFFUSION_VIZ_FRAG = /* glsl */ `
+uniform sampler2D tChemicals;
+uniform vec3 uColor1;  // 高 U 色
+uniform vec3 uColor2;  // 高 V 色
+uniform vec3 uBgColor; // 背景色
+varying vec2 vUv;
+
+void main() {
+  vec4 chem = texture2D(tChemicals, vUv);
+  float brightness = chem.r * 0.6 + chem.g * 0.4;
+
+  vec3 color = mix(uBgColor, uColor1, chem.r);
+  color = mix(color, uColor2, chem.g * 0.7);
+
+  gl_FragColor = vec4(color * (0.5 + brightness * 0.5), brightness);
+}`
+
+
+// ──────────────────────────────────────────────
+// 21. N-Body 灵气星云 — 引力粒子系统
+// ──────────────────────────────────────────────
+
+/** 引力场更新 — 每个引力源对全场产生力 */
+export const NBODY_FIELD_FRAG = /* glsl */ `
+uniform vec3 uSources[5];   // x,y = 位置, z = 质量
+uniform int uSourceCount;
+uniform float uGravity;     // 万有引力常数
+uniform float uSoftening;   // 软化半径
+varying vec2 vUv;
+
+void main() {
+  vec2 force = vec2(0.0);
+  for (int i = 0; i < 5; i++) {
+    if (i >= uSourceCount) break;
+    vec2 diff = uSources[i].xy - vUv;
+    float dist2 = dot(diff, diff) + uSoftening;
+    float dist = sqrt(dist2);
+
+    // 引力: F = G * M / r², 方向指向源
+    float strength = uGravity * uSources[i].z / dist2;
+
+    // 加切向力（轨道效应）：垂直于径向
+    vec2 radial = diff / dist;
+    vec2 tangent = vec2(-radial.y, radial.x);
+    float orbital = uSources[i].z * 0.3 / (dist2 + 0.01);
+
+    force += radial * strength + tangent * orbital;
+  }
+
+  gl_FragColor = vec4(force, 0.0, 1.0);
+}`
+
+/** 粒子绘制 — 将粒子纹理渲染为发光点晕 */
+export const NBODY_RENDER_FRAG = /* glsl */ `
+uniform sampler2D tParticles; // RG = pos, B = brightness
+uniform vec2 uTexelSize;
+uniform float uPointSize;
+uniform float uTime;
+varying vec2 vUv;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+void main() {
+  // 每个粒子在纹理中是一个像素。我们查找周围 1 像素半径内的粒子
+  vec3 acc = vec3(0.0);
+  float weight = 0.0;
+
+  for (int dx = -1; dx <= 1; dx++) {
+    for (int dy = -1; dy <= 1; dy++) {
+      vec2 sampleUv = vUv + vec2(float(dx), float(dy)) * uTexelSize;
+      vec4 p = texture2D(tParticles, sampleUv);
+      if (p.b > 0.01) {
+        float dist = length(vUv - p.xy);
+        float w = exp(-dist * dist * uPointSize);
+        vec3 color = vec3(
+          1.0 - dist * 2.0,
+          0.85 - dist * 1.5,
+          0.2 + p.b * 0.5
+        );
+        acc += color * w * p.b;
+        weight += w;
+      }
+    }
+  }
+
+  if (weight > 0.001) {
+    acc /= weight;
+  }
+
+  gl_FragColor = vec4(acc, clamp(weight * 0.5, 0.0, 1.0));
+}`
+
+
+// ──────────────────────────────────────────────
+// 22. LIC 流速线 — Line Integral Convolution
+// ──────────────────────────────────────────────
+
+export const LIC_FLOW_FRAG = /* glsl */ `
+uniform sampler2D tVelocity;
+uniform sampler2D tNoise;    // 白噪声纹理
+uniform float uStepSize;     // 积分步长
+uniform float uNumSteps;     // 步数
+uniform float uIntensity;
+varying vec2 vUv;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+void main() {
+  vec2 pos = vUv;
+  float noiseVal = hash(vUv * 1024.0);
+  float acc = noiseVal;
+  float weight = 1.0;
+
+  // 正向流线
+  for (float i = 1.0; i <= uNumSteps; i++) {
+    vec2 vel = texture2D(tVelocity, pos).xy;
+    pos += vel * uStepSize;
+    pos = clamp(pos, vec2(0.001), vec2(0.999));
+
+    if (length(vel) < 0.001) break;
+
+    float w = 1.0 - i / uNumSteps;
+    acc += hash(pos * 2048.0) * w;
+    weight += w;
+  }
+
+  // 反向流线
+  pos = vUv;
+  for (float i = 1.0; i <= uNumSteps; i++) {
+    vec2 vel = texture2D(tVelocity, pos).xy;
+    pos -= vel * uStepSize;
+    pos = clamp(pos, vec2(0.001), vec2(0.999));
+
+    if (length(vel) < 0.001) break;
+
+    float w = 1.0 - i / uNumSteps;
+    acc += hash(pos * 2048.0 + 0.5) * w;
+    weight += w;
+  }
+
+  float val = acc / weight;
+  vec3 color = mix(
+    vec3(0.05, 0.15, 0.3),   // 低速暗蓝
+    vec3(1.0, 0.8, 0.2),     // 高速金
+    val
+  );
+  gl_FragColor = vec4(color * uIntensity, 1.0);
+}`
+
+
+// ──────────────────────────────────────────────
+// 23. 复合叠加 — RD + NBody + LIC 三合一渲染
+// ──────────────────────────────────────────────
+
+export const TRIPLE_EFFECT_COMPOSITE_FRAG = /* glsl */ `
+uniform sampler2D tScene;      // 原始场景
+uniform sampler2D tRD;         // Reaction-Diffusion
+uniform sampler2D tNBody;      // N-Body 星云
+uniform sampler2D tLIC;        // LIC 流线
+uniform float uRDStrength;
+uniform float uNBodyStrength;
+uniform float uLICStrength;
+varying vec2 vUv;
+
+void main() {
+  vec4 scene = texture2D(tScene, vUv);
+  vec4 rd = texture2D(tRD, vUv);
+  vec4 nbody = texture2D(tNBody, vUv);
+  vec4 lic = texture2D(tLIC, vUv);
+
+  // Additive 叠加
+  vec3 result = scene.rgb;
+  result += rd.rgb * rd.a * uRDStrength;
+  result += nbody.rgb * nbody.a * uNBodyStrength;
+  result += lic.rgb * uLICStrength;
+
+  gl_FragColor = vec4(result, 1.0);
+}`

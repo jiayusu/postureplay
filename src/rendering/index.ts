@@ -21,3 +21,9 @@ export { FluidRenderer } from './FluidRenderer'
 export type { FluidRenderConfig } from './FluidRenderer'
 export { GPUWireframeRelief } from './GPUWireframeRelief'
 export type { ReliefConfig } from './GPUWireframeRelief'
+
+// Taichi 风格特效
+export { ReactionDiffusion } from './ReactionDiffusion'
+export type { RDConfig, RDSeed } from './ReactionDiffusion'
+export { NBodyField } from './NBodyField'
+export type { NBodyConfig, NBodySource } from './NBodyField'

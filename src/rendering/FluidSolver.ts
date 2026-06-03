@@ -13,6 +13,8 @@ import {
   FLUID_DIVERGENCE_FRAG,
   FLUID_JACOBI_FRAG,
   FLUID_PROJECT_FRAG,
+  CURL_CALC_FRAG,
+  VORTICITY_CONFINEMENT_FRAG,
 } from './shaders'
 
 // ────────────────────────────────────────────
@@ -73,6 +75,9 @@ export class FluidSolver {
   private pressureRT1: THREE.WebGLRenderTarget
   private pressureRT2: THREE.WebGLRenderTarget
 
+  // Vorticity Confinement RT (Taichi 风格漩涡增强)
+  private curlRT: THREE.WebGLRenderTarget
+
   // ShaderMaterials
   private advectVelocityMat: THREE.ShaderMaterial
   private diffuseVelocityMat: THREE.ShaderMaterial
@@ -80,6 +85,8 @@ export class FluidSolver {
   private divergenceMat: THREE.ShaderMaterial
   private jacobiMat: THREE.ShaderMaterial
   private projectMat: THREE.ShaderMaterial
+  private curlCalcMat: THREE.ShaderMaterial
+  private vorticityMat: THREE.ShaderMaterial
 
   // 注入用（在全屏 texture 上画一个圆）
   private sourceCanvas: HTMLCanvasElement
@@ -123,6 +130,9 @@ export class FluidSolver {
     this.divergenceRT = new THREE.WebGLRenderTarget(res, res, rtOpts())
     this.pressureRT1 = new THREE.WebGLRenderTarget(res, res, rtOpts())
     this.pressureRT2 = new THREE.WebGLRenderTarget(res, res, rtOpts())
+
+    // 旋度 (单通道 float)
+    this.curlRT = new THREE.WebGLRenderTarget(res, res, rtOpts())
 
     // ── 着色器材质 ──
     const makeMat = (frag: string, uniforms: Record<string, any>) =>
@@ -180,6 +190,18 @@ export class FluidSolver {
       tVelocity: { value: null },
       tPressure: { value: null },
       uTexelSize: { value: new THREE.Vector2(texelSize, texelSize) },
+    })
+
+    // ── 涡量约束 (Vorticity Confinement) ──
+    this.curlCalcMat = makeMat(CURL_CALC_FRAG, {
+      tVelocity: { value: null },
+      uTexelSize: { value: new THREE.Vector2(texelSize, texelSize) },
+    })
+    this.vorticityMat = makeMat(VORTICITY_CONFINEMENT_FRAG, {
+      tVelocity: { value: null },
+      tCurl: { value: null },
+      uTexelSize: { value: new THREE.Vector2(texelSize, texelSize) },
+      uStrength: { value: 0.5 },
     })
 
     // ── 注入画布 ──
@@ -300,6 +322,16 @@ export class FluidSolver {
     this.diffuseVelocityMat.uniforms.tSource.value = velocityRT2.texture
     this.renderFullscreen(r, velocityRT1, this.diffuseVelocityMat)
 
+    // ── 2.5 涡量约束 (Taichi 风格漩涡增强) ──
+    //    计算速度场的旋度 → 基于旋度梯度添加约束力
+    //    必须在散度/压力计算之前完成，以保证约束力被投影步骤处理
+    this.curlCalcMat.uniforms.tVelocity.value = velocityRT1.texture
+    this.renderFullscreen(r, this.curlRT, this.curlCalcMat)
+    this.vorticityMat.uniforms.tVelocity.value = velocityRT1.texture
+    this.vorticityMat.uniforms.tCurl.value = this.curlRT.texture
+    this.renderFullscreen(r, velocityRT2, this.vorticityMat)
+    ;[this.velocityRT1, this.velocityRT2] = [this.velocityRT2, this.velocityRT1]
+
     // ── 3. 密度平流：density1 → density2 ──
     this.advectDensityMat.uniforms.tVelocity.value = velocityRT1.texture
     this.advectDensityMat.uniforms.tDensity.value = densityRT1.texture
@@ -356,7 +388,8 @@ export class FluidSolver {
     const r = this.renderer
     ;[this.velocityRT1, this.velocityRT2,
       this.densityRT1, this.densityRT2,
-      this.divergenceRT, this.pressureRT1, this.pressureRT2].forEach(rt => {
+      this.divergenceRT, this.pressureRT1, this.pressureRT2,
+      this.curlRT].forEach(rt => {
       r.setRenderTarget(rt)
       r.clear()
     })
@@ -416,6 +449,7 @@ export class FluidSolver {
     this.divergenceRT.dispose()
     this.pressureRT1.dispose()
     this.pressureRT2.dispose()
+    this.curlRT.dispose()
     this.sourceTexture.dispose()
     this.quad.geometry.dispose()
     ;(this.quad.material as THREE.Material).dispose()
@@ -425,5 +459,7 @@ export class FluidSolver {
     this.divergenceMat.dispose()
     this.jacobiMat.dispose()
     this.projectMat.dispose()
+    this.curlCalcMat.dispose()
+    this.vorticityMat.dispose()
   }
 }
