@@ -65,7 +65,7 @@ function computeAngle(
 }
 
 /** 线角度（弧度，相对于水平线） */
-function lineAngle(
+function _lineAngle(
   a: { x: number; y: number },
   b: { x: number; y: number },
 ): number {
@@ -756,7 +756,6 @@ export function computeOverallHealthScore(metrics: {
   totalWeight += 0.15
 
   // 掌纹线 (10%)
-  const linesDetected = metrics.palmLines.filter((l) => l.detected).length
   const avgClarity = metrics.palmLines.reduce((s, l) => s + l.clarity, 0) / 4
   const palmLineScore = avgClarity > PALM_LINE_CLARITY_GOOD ? 0.9
     : avgClarity > PALM_LINE_CLARITY_FAIR ? 0.65 : 0.45
@@ -789,9 +788,9 @@ export function computeOverallHealthScore(metrics: {
 }
 
 /** 计算双手对称性评分 */
-export function computeSymmetryScore(
-  leftHand: HandHealthMetrics | null,
-  rightHand: HandHealthMetrics | null,
+export function _computeSymmetryScore(
+  leftHand: Record<string, any> | null,
+  rightHand: Record<string, any> | null,
 ): number {
   if (!leftHand || !rightHand) return 0.5
 

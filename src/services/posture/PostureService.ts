@@ -122,7 +122,7 @@ export class PostureService implements PostureServiceInterface {
     previousKeypoints: Keypoint[] | null,
   ): PostureMetrics {
     // 静止检测
-    const { isStill, delta } = computeStillness(currentKeypoints, previousKeypoints)
+    const { isStill } = computeStillness(currentKeypoints, previousKeypoints)
 
     const now = Date.now()
     let stillnessDuration = metrics.stillnessDuration

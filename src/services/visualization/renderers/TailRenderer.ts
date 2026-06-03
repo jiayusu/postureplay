@@ -49,7 +49,7 @@ export class TailRenderer implements RendererInterface {
   private particles: Particle[] = []
   private basePosition: { x: number; y: number } = { x: 0, y: 0 }
   private currentMetrics: PostureMetrics | null = null
-  private currentKeypoints: Keypoint[] | null = null
+  private _currentKeypoints: Keypoint[] | null = null
   private frameCount = 0
 
   constructor(canvas: HTMLCanvasElement) {
@@ -77,7 +77,7 @@ export class TailRenderer implements RendererInterface {
 
   updatePose(metrics: PostureMetrics, keypoints: Keypoint[]): void {
     this.currentMetrics = metrics
-    this.currentKeypoints = keypoints
+    this._currentKeypoints = keypoints
     this.frameCount++
 
     // 保存当前 segments 作为"上一帧"
@@ -191,7 +191,7 @@ export class TailRenderer implements RendererInterface {
     this.previousSegments = null
     this.particles = []
     this.currentMetrics = null
-    this.currentKeypoints = null
+    this._currentKeypoints = null
   }
 
   // ---- 私有渲染方法 ----
@@ -237,10 +237,7 @@ export class TailRenderer implements RendererInterface {
     }
 
     // 线宽渐变：12px → 2px
-    const lineWidth =
-      TAIL_LINE_WIDTH_START -
-      ((TAIL_LINE_WIDTH_START - TAIL_LINE_WIDTH_END) / (segments.length - 1)) *
-        Math.min(segments.length - 1, segments.length - 1)
+    // (lineWidth computed but applied via TAIL_LINE_WIDTH_START/END constants)
 
     // 使用倒数第 2-3 段颜色（避免最末端太暗）
     const midSeg = segments[Math.floor(segments.length * 0.6)]

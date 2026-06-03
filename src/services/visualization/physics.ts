@@ -7,7 +7,6 @@
 
 import type { Keypoint, PostureMetrics, TailSegment, Particle } from '@/types'
 import {
-  BODY_JOINTS,
   TAILBONE_ANCHOR_INDICES,
 } from '@/constants/keypoints'
 import {
@@ -97,7 +96,7 @@ export function computeStiffness(spineAngle: number): number {
  * 刚度越大运动阻尼越大（角度变化 × (1-stiffness)）。
  */
 export function updateTailSegments(
-  segments: TailSegment[],
+  _segments: TailSegment[],
   basePosition: { x: number; y: number },
   metrics: PostureMetrics,
   previousSegments: TailSegment[] | null,

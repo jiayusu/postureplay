@@ -11,6 +11,8 @@ import { TailRenderer } from './renderers/TailRenderer'
 
 export class VisualizationService implements VisualizationServiceInterface {
   private renderer: TailRenderer | null = null
+  // canvas ref kept for potential future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private canvas: HTMLCanvasElement | null = null
   private video: HTMLVideoElement | null = null
 

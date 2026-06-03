@@ -115,7 +115,7 @@ export function detectPose(
   }
 
   // 映射为 Keypoint 数组
-  return landmarks.map((lm, i) => ({
+  return landmarks.map((lm, _i) => ({
     x: lm.x,
     y: lm.y,
     z: lm.z,

@@ -85,7 +85,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '⚠️ 尾椎检测到石化前兆！近 {day} 天静止时间持续增加，中立位占比下滑至 {score} 分。{highlight}，该站起来抖一抖了',
     highlight: '久坐时间在增加',
     tip: '设置一个 30 分钟站立提醒，打破石化诅咒',
-    match(trend, isPeakToday, avgNeutralRatio, avgStillnessPeak) {
+    match(trend, _isPeakToday, _avgNeutralRatio, avgStillnessPeak) {
       if (trend !== 'down') return 0
       if (avgStillnessPeak >= 120) return 10
       if (avgStillnessPeak >= 60) return 7
@@ -99,7 +99,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '尾巴悄悄告诉你：它快僵住了。近 {day} 天体态评分 {score}，{highlight}。石化程度正在加深，趁着还没变成石像，起来走走吧 🪨',
     highlight: '活动量偏低',
     tip: '试试"番茄工作法"，25 分钟工作 + 5 分钟活动',
-    match(trend, isPeakToday, avgNeutralRatio, avgStillnessPeak) {
+    match(trend, _isPeakToday, _avgNeutralRatio, _avgStillnessPeak) {
       if (trend !== 'down') return 0
       return 4
     },
@@ -113,7 +113,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '这 {day} 天的体态数据不太理想，评分 {score} 分。{highlight}。别担心，体态和心情一样有起伏，明天会是新的一天 💪',
     highlight: '今天的低谷是明天的起跳板',
     tip: '睡前做 5 分钟猫牛式拉伸，放松整条脊柱',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, _isPeakToday, avgNeutralRatio) {
       if (trend !== 'down') return 0
       if (avgNeutralRatio < 0.35) return 10
       if (avgNeutralRatio < 0.5) return 6
@@ -127,7 +127,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '尾巴运势 {score} 分，最近姿势有点放飞自我啊。{highlight}。不过运势这东西，触底就该反弹了 🔮',
     highlight: '触底反弹在即',
     tip: '工作时把显示器垫高到视线水平，立竿见影',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, _isPeakToday, _avgNeutralRatio) {
       if (trend !== 'down') return 0
       return 4
     },
@@ -141,7 +141,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '身体进入了巡航模式 🚢 近 {day} 天评分稳定在 {score} 分，{highlight}。平稳是好事，但别让尾巴太无聊哦',
     highlight: '巡航模式中',
     tip: '偶尔换换坐姿，给不同的肌肉群轮班',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, _isPeakToday, avgNeutralRatio) {
       if (trend !== 'stable') return 0
       if (avgNeutralRatio >= 0.35 && avgNeutralRatio < 0.6) return 10
       if (avgNeutralRatio >= 0.3 && avgNeutralRatio < 0.35) return 7
@@ -155,7 +155,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '姿势稳定得像一座山 ⛰️ 评分 {score} 分，{highlight}。这样的状态最适合专注工作，别再分心刷手机了',
     highlight: '稳如泰山',
     tip: '保持呼吸均匀，腹式呼吸能让身体更放松',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, _isPeakToday, avgNeutralRatio) {
       if (trend !== 'stable') return 0
       if (avgNeutralRatio >= 0.35 && avgNeutralRatio < 0.6) return 7
       return 2
@@ -170,7 +170,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '👑 尾巴对你的表现非常满意！近 {day} 天体态评分高达 {score} 分，{highlight}。你这姿势，堪称教科书级别',
     highlight: '教科书级体态',
     tip: '可以挑战单腿站立刷牙，进一步提升核心稳定性',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, _isPeakToday, avgNeutralRatio) {
       if (trend !== 'stable') return 0
       if (avgNeutralRatio >= 0.6) return 10
       return 0
@@ -183,7 +183,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '姿势水准持续在线！评分 {score} 分稳居高位，{highlight}。你的尾巴已经很久没闹脾气了，继续保持 🎯',
     highlight: '高水准保持者',
     tip: '尝试在工作间隙做 2 分钟靠墙站立，精确校准',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, _isPeakToday, avgNeutralRatio) {
       if (trend !== 'stable') return 0
       if (avgNeutralRatio >= 0.6) return 7
       return 0
@@ -198,7 +198,7 @@ const TEMPLATES: FortuneTemplate[] = [
       '你的体态目前维持在较低水平，评分 {score} 分。{highlight}。虽然稳定，但还有很大的提升空间 🌅',
     highlight: '稳定但有待提升',
     tip: '先从调整椅子和桌子高度开始，打好基础',
-    match(trend, isPeakToday, avgNeutralRatio) {
+    match(trend, _isPeakToday, avgNeutralRatio) {
       if (trend !== 'stable') return 0
       if (avgNeutralRatio < 0.3) return 10
       return 0
