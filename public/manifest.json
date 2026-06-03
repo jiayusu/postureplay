@@ -1,0 +1,29 @@
+{
+  "name": "体态游乐场 PosturePlay",
+  "short_name": "PosturePlay",
+  "description": "看见你的尾巴——实时姿态可视化与每日运势",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f0f1a",
+  "background_color": "#0f0f1a",
+  "scope": "/",
+  "lang": "zh-CN",
+  "categories": ["health", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
