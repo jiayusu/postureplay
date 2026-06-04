@@ -171,10 +171,16 @@ export class MultiLayerCompositor {
     this.warpMat.uniforms.tScene.value = this.compositeRT.texture
     this.renderPass(r, this.warpRT, this.warpMat)
 
-    // Step 3: warpRT → screen
-    const blitMat = new THREE.MeshBasicMaterial({ map: this.warpRT.texture, depthTest: false, depthWrite: false })
-    this.quad.material = blitMat
+    // Step 3: warpRT → screen (透明叠加)
+    const blitMat = new THREE.MeshBasicMaterial({
+      map: this.warpRT.texture,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true,
+      blending: THREE.NormalBlending,
+    })
     r.setRenderTarget(null)
+    r.clear() // 清除为透明底
     r.render(this.scene, this.camera)
     blitMat.dispose()
   }

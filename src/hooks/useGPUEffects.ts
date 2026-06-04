@@ -255,10 +255,12 @@ export function useGPUEffects(
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false })
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, premultipliedAlpha: false, antialias: false })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
     renderer.setClearColor(0x000000, 0)
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+    // 立即清除画布，避免显示黑色背景
+    renderer.clear()
     rendererRef.current = renderer
 
     // 公共 RT 选项 (256px 足够特效使用)

@@ -27,7 +27,7 @@ const GPUEffectOverlay: React.FC<GPUEffectOverlayProps> = ({
     <canvas
       ref={canvasRef}
       className={`pointer-events-none ${className}`}
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: '100%', height: '100%', background: 'transparent' }}
     />
   )
 }
