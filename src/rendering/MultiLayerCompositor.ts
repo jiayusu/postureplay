@@ -21,12 +21,12 @@ export interface CompositorLayerConfig {
 }
 
 const DEFAULT_LAYERS: CompositorLayerConfig = {
-  rdStrength: 0.35,
-  nBodyStrength: 0.5,
-  licStrength: 0.3,
-  particleStrength: 0.4,
-  meridianStrength: 0.35,
-  chakraStrength: 0.6,
+  rdStrength: 1.2,
+  nBodyStrength: 1.5,
+  licStrength: 1.0,
+  particleStrength: 1.2,
+  meridianStrength: 1.0,
+  chakraStrength: 1.5,
 }
 
 export class MultiLayerCompositor {
@@ -114,7 +114,7 @@ export class MultiLayerCompositor {
     this.screenBlitMat = new THREE.ShaderMaterial({
       uniforms: {
         tScene: { value: null },
-        uGlobalAlpha: { value: 0.6 },
+        uGlobalAlpha: { value: 1.0 },
       },
       vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
       fragmentShader: /* glsl */ `

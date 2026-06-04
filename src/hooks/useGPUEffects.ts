@@ -52,7 +52,7 @@ const DEFAULT_CONFIG: GPUEffectsConfig = {
   particleIntensity: 1,
   meridianIntensity: 1,
   chakraIntensity: 1,
-  globalAlpha: 0.6,
+  globalAlpha: 1.0,
 }
 
 /** 推导体态分数 0~100 */
@@ -285,12 +285,12 @@ export function useGPUEffects(
     const cTex = chakraRT.texture
 
     compositor.setLayers({
-      rdStrength: 0.35 * c.rdIntensity,
-      nBodyStrength: 0.5 * c.nBodyIntensity,
-      licStrength: 0.3 * c.licIntensity,
-      particleStrength: 0.4 * c.particleIntensity,
-      meridianStrength: 0.35 * c.meridianIntensity,
-      chakraStrength: 0.6 * c.chakraIntensity,
+      rdStrength: 1.2 * c.rdIntensity,
+      nBodyStrength: 1.5 * c.nBodyIntensity,
+      licStrength: 1.0 * c.licIntensity,
+      particleStrength: 1.2 * c.particleIntensity,
+      meridianStrength: 1.0 * c.meridianIntensity,
+      chakraStrength: 1.5 * c.chakraIntensity,
     })
     compositor.setGlobalAlpha(c.globalAlpha)
     compositor.compositeFinal({
@@ -406,13 +406,13 @@ export function useGPUEffects(
     if (degradationLevel === 'level3') {
       cfg.current.globalAlpha = 0
     } else if (degradationLevel === 'level2') {
-      cfg.current.globalAlpha = 0.25
+      cfg.current.globalAlpha = 0.4
       cfg.current.licIntensity = 0.3
       cfg.current.particleIntensity = 0.3
       cfg.current.meridianIntensity = 0.3
       cfg.current.chakraIntensity = 0.3
     } else if (degradationLevel === 'level1') {
-      cfg.current.globalAlpha = 0.5
+      cfg.current.globalAlpha = 0.7
       cfg.current.particleIntensity = 0.6
       cfg.current.meridianIntensity = 0.6
     } else {

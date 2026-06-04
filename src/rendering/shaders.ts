@@ -1015,7 +1015,10 @@ void main() {
   vec3 color = mix(uBgColor, uColor1, chem.r);
   color = mix(color, uColor2, chem.g * 0.7);
 
-  gl_FragColor = vec4(color * (0.5 + brightness * 0.5), brightness);
+  // Boosted: 原 (0.5 + brightness*0.5) 太暗, alpha 仅用 brightness 太弱
+  float alpha = brightness * 2.2;
+  float rgbFactor = 0.65 + brightness * 0.35;
+  gl_FragColor = vec4(color * rgbFactor, alpha);
 }`
 
 
