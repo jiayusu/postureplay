@@ -12,7 +12,7 @@ export type {
 export { PostProcessingPipeline } from './PostProcessing'
 export { InstancedParticleSystem } from './InstancedParticleSystem'
 
-// 新增：GPU 流体特效
+// GPU 流体特效
 export { FluidSolver } from './FluidSolver'
 export type { FluidSource, FluidConfig } from './FluidSolver'
 export { spineToFlowSources, palmToFlowSources, boneToFlowSources } from './EnergyFlowField'
@@ -33,3 +33,15 @@ export { LICFlowRenderer } from './LICFlowRenderer'
 export type { LICConfig } from './LICFlowRenderer'
 export { EffectCompositor } from './EffectCompositor'
 export type { CompositorConfig } from './EffectCompositor'
+
+// C/D/E/F 新特效
+export { GPUParticleAdvection } from './GPUParticleAdvection'
+export type { ParticleAdvectionConfig } from './GPUParticleAdvection'
+export { MeridianForceLines } from './MeridianForceLines'
+export type { MeridianCharge, MeridianConfig } from './MeridianForceLines'
+export { BreathingWarp } from './BreathingWarp'
+export type { BreathingWarpConfig } from './BreathingWarp'
+export { ChakraOrbs } from './ChakraOrbs'
+export type { ChakraConfig } from './ChakraOrbs'
+export { MultiLayerCompositor } from './MultiLayerCompositor'
+export type { CompositorLayerConfig } from './MultiLayerCompositor'
