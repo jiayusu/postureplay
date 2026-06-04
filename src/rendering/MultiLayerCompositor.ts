@@ -44,6 +44,7 @@ export class MultiLayerCompositor {
   // 着色材质
   private compositeMat: THREE.ShaderMaterial
   private warpMat: THREE.ShaderMaterial
+  private screenBlitMat: THREE.ShaderMaterial
 
   private _breathPhase = 0
   private _elapsed = 0
@@ -55,6 +56,10 @@ export class MultiLayerCompositor {
     this.camera = new THREE.OrthographicCamera(0, 1, 1, 0, -1, 1)
     this.scene = new THREE.Scene()
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial())
+    // PlaneGeometry(1,1) 默认顶点范围 (-0.5,-0.5)~(0.5,0.5)
+    // OrthographicCamera(0,1,1,0) 视口范围 x:[0,1] y:[0,1]
+    // quad 必须移到 (0.5, 0.5) 才能覆盖整个视口
+    this.quad.position.set(0.5, 0.5, 0)
     this.scene.add(this.quad)
 
     const rtOpts: THREE.RenderTargetOptions = {
@@ -104,6 +109,25 @@ export class MultiLayerCompositor {
       fragmentShader: BREATHING_WARP_FRAG,
       depthTest: false, depthWrite: false,
     })
+
+    // ── 屏幕 blit 着色器 (warpRT → screen) ──
+    this.screenBlitMat = new THREE.ShaderMaterial({
+      uniforms: {
+        tScene: { value: null },
+        uGlobalAlpha: { value: 0.6 },
+      },
+      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: /* glsl */ `
+        varying vec2 vUv;
+        uniform sampler2D tScene;
+        uniform float uGlobalAlpha;
+        void main() {
+          vec4 c = texture2D(tScene, vUv);
+          gl_FragColor = vec4(c.rgb, c.a * uGlobalAlpha);
+        }`,
+      depthTest: false, depthWrite: false,
+      transparent: true,
+    })
   }
 
   // ────────────────────────────
@@ -133,6 +157,11 @@ export class MultiLayerCompositor {
   setBreathCenter(x: number, y: number): void {
     this.warpMat.uniforms.uCenterX.value = x
     this.warpMat.uniforms.uCenterY.value = y
+  }
+
+  /** 设置全局透明度（用于性能降级等场景） */
+  setGlobalAlpha(alpha: number): void {
+    this.screenBlitMat.uniforms.uGlobalAlpha.value = alpha
   }
 
   // ────────────────────────────
@@ -172,17 +201,11 @@ export class MultiLayerCompositor {
     this.renderPass(r, this.warpRT, this.warpMat)
 
     // Step 3: warpRT → screen (透明叠加)
-    const blitMat = new THREE.MeshBasicMaterial({
-      map: this.warpRT.texture,
-      depthTest: false,
-      depthWrite: false,
-      transparent: true,
-      blending: THREE.NormalBlending,
-    })
+    this.screenBlitMat.uniforms.tScene.value = this.warpRT.texture
+    this.quad.material = this.screenBlitMat
     r.setRenderTarget(null)
-    r.clear() // 清除为透明底
+    // 不清除，让特效透明叠加
     r.render(this.scene, this.camera)
-    blitMat.dispose()
   }
 
   /** 仅执行多层合成（跳过呼吸扭曲），渲染到目标 */
@@ -222,6 +245,7 @@ export class MultiLayerCompositor {
     this.warpRT.dispose()
     this.compositeMat.dispose()
     this.warpMat.dispose()
+    this.screenBlitMat.dispose()
     this.quad.geometry.dispose()
     ;(this.quad.material as THREE.Material).dispose()
   }

@@ -285,7 +285,7 @@ uniform float uChakraStrength;
 varying vec2 vUv;
 
 void main() {
-  vec3 result = texture2D(tScene, vUv).rgb;
+  vec3 result = vec3(0.0);
 
   // Additive 叠加所有特效层
   vec4 rd = texture2D(tRD, vUv);
@@ -306,5 +306,8 @@ void main() {
   vec4 chakra = texture2D(tChakra, vUv);
   result += chakra.rgb * chakra.a * uChakraStrength;
 
-  gl_FragColor = vec4(result, 1.0);
+  float totalAlpha = rd.a * uRDStrength + nbody.a * uNBodyStrength
+    + lic.a * uLICStrength + particles.a * uParticleStrength
+    + meridian.a * uMeridianStrength + chakra.a * uChakraStrength;
+  gl_FragColor = vec4(result, totalAlpha);
 }`

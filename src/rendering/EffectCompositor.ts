@@ -49,6 +49,7 @@ export class EffectCompositor {
     this.scene = new THREE.Scene()
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial())
     this.scene.add(this.quad)
+    this.quad.position.set(0.5, 0.5, 0)
 
     // ── 合成 RT ──
     this.compositeRT = new THREE.WebGLRenderTarget(res, res, {

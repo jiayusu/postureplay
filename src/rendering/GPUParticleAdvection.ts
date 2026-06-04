@@ -107,13 +107,14 @@ export class GPUParticleAdvection {
         uTime: { value: 0 },
       },
       vertexShader: /* glsl */ `
-        attribute vec3 position;
         uniform sampler2D tParticles;
         uniform float uTexSize;
+        uniform float uPointSize;
         varying float vAge;
         varying vec2 vPpos;
 
         void main() {
+          // position.x = 粒子索引（由 BufferGeometry 提供）
           float idx = position.x;
           float u = mod(idx, uTexSize) / uTexSize;
           float v = floor(idx / uTexSize) / uTexSize;

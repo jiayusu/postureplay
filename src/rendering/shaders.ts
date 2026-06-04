@@ -1072,15 +1072,17 @@ void main() {
     for (int dy = -1; dy <= 1; dy++) {
       vec2 sampleUv = vUv + vec2(float(dx), float(dy)) * uTexelSize;
       vec4 p = texture2D(tParticles, sampleUv);
-      if (p.b > 0.01) {
+      // 用粒子位置有效性判断，而非速度大小（初始速度太小会误判）
+      if (length(p.xy) > 0.001) {
         float dist = length(vUv - p.xy);
         float w = exp(-dist * dist * uPointSize);
+        float bright = 0.6;
         vec3 color = vec3(
           1.0 - dist * 2.0,
           0.85 - dist * 1.5,
-          0.2 + p.b * 0.5
+          0.2 + bright * 0.5
         );
-        acc += color * w * p.b;
+        acc += color * w * bright;
         weight += w;
       }
     }

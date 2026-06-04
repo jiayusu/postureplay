@@ -16,6 +16,7 @@
 import { useRef, useEffect, useCallback } from 'react'
 import * as THREE from 'three'
 import { FluidSolver } from '@/rendering/FluidSolver'
+import type { FluidSource } from '@/rendering/FluidSolver'
 import { spineToFlowSources } from '@/rendering/EnergyFlowField'
 import type { SpineFlowInput } from '@/rendering/EnergyFlowField'
 import { ReactionDiffusion } from '@/rendering/ReactionDiffusion'
@@ -181,6 +182,50 @@ export function useGPUEffects(
         }))
         nBody.setSources(sources)
       }
+    } else {
+      // 无关键点时的默认特效：确保始终有可见输出
+      if (lastSpinePoints.current !== '__default__') {
+        lastSpinePoints.current = '__default__'
+        lastScore.current = 50
+        rd.autoPreset(50)
+        // 中心呼吸脉冲
+        const centerSeed = [{ x: 0.5, y: 0.5, radius: 0.06, uAmount: 0.4, vAmount: 0.2 }]
+        rd.addSeeds(centerSeed)
+        // 默认流体源（中心漩涡 + 多个脉冲点）
+        const defFluidSources: FluidSource[] = [
+          { x: 0.5, y: 0.5, vx: 0, vy: 0, color: [0.3, 0.6, 1.0], radius: 0.08 },
+          { x: 0.35, y: 0.5, vx: -0.5, vy: 0, color: [0.2, 0.4, 0.9], radius: 0.04 },
+          { x: 0.65, y: 0.5, vx: 0.5, vy: 0, color: [0.2, 0.4, 0.9], radius: 0.04 },
+          { x: 0.5, y: 0.35, vx: 0, vy: -0.5, color: [0.9, 0.3, 0.5], radius: 0.04 },
+          { x: 0.5, y: 0.65, vx: 0, vy: 0.5, color: [0.9, 0.3, 0.5], radius: 0.04 },
+        ]
+        fluid.addSources(defFluidSources)
+        // 默认 NBody 环状源
+        const ringSources: NBodySource[] = []
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2
+          ringSources.push({
+            x: 0.5 + Math.cos(a) * 0.2,
+            y: 0.5 + Math.sin(a) * 0.2,
+            mass: 0.8,
+            color: new THREE.Color().setHSL(i / 8, 0.8, 0.5),
+          })
+        }
+        nBody.setSources(ringSources)
+        // 默认经络关键点
+        const defKps = [
+          { x: 0.5, y: 0.2 }, { x: 0.45, y: 0.3 }, { x: 0.55, y: 0.3 },
+          { x: 0.4, y: 0.45 }, { x: 0.6, y: 0.45 },
+          { x: 0.35, y: 0.6 }, { x: 0.65, y: 0.6 },
+          { x: 0.4, y: 0.75 }, { x: 0.6, y: 0.75 },
+          { x: 0.3, y: 0.9 }, { x: 0.7, y: 0.9 },
+          { x: 0.45, y: 0.95 }, { x: 0.55, y: 0.95 },
+        ]
+        meridian.setKeypoints(defKps, 50)
+        meridian.setColorByScore(50)
+      }
+      // 脉轮默认定时更新
+      chakra.updatePositions(0.5, 0.7, 50)
     }
 
     // 经络力场线：每帧更新关键点
@@ -209,26 +254,36 @@ export function useGPUEffects(
     }
     compositor.setBreath(dt, 12, 1)
 
-    // 2. 步进模拟
-    fluid.step()
-    rd.step()
-    nBody.step(dt)
+    // 2. 步进模拟（各自容错，独立崩溃不影响管线）
+    try { fluid.step() } catch (_) {}
+    try { rd.step() } catch (_) {}
+    try { nBody.step(dt) } catch (_) {}
 
-    // 3. 粒子平流
-    particles.step(dt, fluid.getVelocityTexture())
-    // 渲染粒子到 RT
-    particles.renderToRT(particlesRT)
+    // 3. 粒子平流 + 渲染到 RT
+    try {
+      particles.step(dt, fluid.getVelocityTexture())
+      particles.renderToRT(particlesRT)
+    } catch (_) {}
 
     // 4. 经络力场线
-    const meridianTex = meridian.render()
+    let meridianTex: THREE.Texture | null = null
+    try { meridianTex = meridian.render() } catch (_) {}
 
     // 5. LIC 流线
-    const licTex = lic.render(fluid.getVelocityTexture())
+    let licTex: THREE.Texture | null = null
+    try { licTex = lic.render(fluid.getVelocityTexture()) } catch (_) {}
 
     // 6. 脉轮到 RT
-    chakra.renderToRT(chakraRT)
+    try { chakra.renderToRT(chakraRT) } catch (_) {}
 
     // 7. 全层合成 → 复合 → 呼吸扭曲 → 屏幕
+    const rdTex = rd.getVisualizationTexture()
+    const nbTex = nBody.getRenderTexture()
+    const pTex = particlesRT.texture
+    const mTex = meridianTex ?? pTex   // 经络失败时用粒子纹理兜底
+    const lTex = licTex ?? pTex         // LIC 失败时用粒子纹理兜底
+    const cTex = chakraRT.texture
+
     compositor.setLayers({
       rdStrength: 0.35 * c.rdIntensity,
       nBodyStrength: 0.5 * c.nBodyIntensity,
@@ -237,13 +292,14 @@ export function useGPUEffects(
       meridianStrength: 0.35 * c.meridianIntensity,
       chakraStrength: 0.6 * c.chakraIntensity,
     })
+    compositor.setGlobalAlpha(c.globalAlpha)
     compositor.compositeFinal({
-      rd: rd.getVisualizationTexture(),
-      nBody: nBody.getRenderTexture(),
-      lic: licTex,
-      particles: particlesRT.texture,
-      meridian: meridianTex,
-      chakra: chakraRT.texture,
+      rd: rdTex,
+      nBody: nbTex,
+      lic: lTex,
+      particles: pTex,
+      meridian: mTex,
+      chakra: cTex,
       dt,
     })
   }, [])
@@ -253,15 +309,30 @@ export function useGPUEffects(
   // ── Mount / Unmount ──
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) { console.warn('[GPU] ⚠️ canvas is null, bailing'); return }
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, premultipliedAlpha: false, antialias: false })
+    const rect = canvas.getBoundingClientRect()
+    const w = rect.width || window.innerWidth
+    const h = rect.height || window.innerHeight
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, premultipliedAlpha: false, antialias: false, preserveDrawingBuffer: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
     renderer.setClearColor(0x000000, 0)
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+    renderer.setSize(w, h, false)
     // 立即清除画布，避免显示黑色背景
     renderer.clear()
     rendererRef.current = renderer
+
+    // 窗口/布局变化时自动调整 renderer 尺寸
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        if (width > 0 && height > 0 && rendererRef.current) {
+          rendererRef.current.setSize(width, height, false)
+        }
+      }
+    })
+    resizeObserver.observe(canvas)
 
     // 公共 RT 选项 (256px 足够特效使用)
     const rtHalf: THREE.RenderTargetOptions = {
@@ -296,6 +367,7 @@ export function useGPUEffects(
     return () => {
       mountedRef.current = false
       cancelAnimationFrame(animFrameRef.current)
+      resizeObserver.disconnect()
       disposeAll()
     }
   }, [canvasRef])

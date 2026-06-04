@@ -65,6 +65,9 @@ export class ReactionDiffusion {
   private chemRT1: THREE.WebGLRenderTarget
   private chemRT2: THREE.WebGLRenderTarget
 
+  // 可视化 RT（颜色映射后的输出）
+  private vizRT: THREE.WebGLRenderTarget
+
   private rdMat: THREE.ShaderMaterial
   private vizMat: THREE.ShaderMaterial
 
@@ -84,6 +87,7 @@ export class ReactionDiffusion {
     this.scene = new THREE.Scene()
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial())
     this.scene.add(this.quad)
+    this.quad.position.set(0.5, 0.5, 0)
 
     const rtOpts: THREE.RenderTargetOptions = {
       minFilter: THREE.LinearFilter,
@@ -93,6 +97,10 @@ export class ReactionDiffusion {
     }
     this.chemRT1 = new THREE.WebGLRenderTarget(res, res, rtOpts)
     this.chemRT2 = new THREE.WebGLRenderTarget(res, res, rtOpts)
+    this.vizRT = new THREE.WebGLRenderTarget(res, res, {
+      minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat, type: THREE.HalfFloatType,
+    })
 
     const texelSize = 1 / res
     this.rdMat = new THREE.ShaderMaterial({
@@ -205,9 +213,9 @@ export class ReactionDiffusion {
     seeds.forEach(s => this.addSeed(s))
   }
 
-  /** 获取可视化纹理 */
+  /** 获取可视化纹理（颜色映射后的输出） */
   getVisualizationTexture(): THREE.Texture {
-    return this.chemRT1.texture
+    return this.vizRT.texture
   }
 
   /** 可视化颜色配置 */
@@ -234,6 +242,9 @@ export class ReactionDiffusion {
       this.renderFullscreen(r, chemRT2, this.rdMat)
       ;[this.chemRT1, this.chemRT2] = [this.chemRT2, this.chemRT1]
     }
+
+    // 渲染可视化到 vizRT
+    this.renderViz(this.vizRT)
 
     this.seedCtx.clearRect(0, 0, this.config.resolution, this.config.resolution)
   }
@@ -304,6 +315,7 @@ export class ReactionDiffusion {
   dispose(): void {
     this.chemRT1.dispose()
     this.chemRT2.dispose()
+    this.vizRT.dispose()
     this.seedTexture.dispose()
     this.rdMat.dispose()
     this.vizMat.dispose()

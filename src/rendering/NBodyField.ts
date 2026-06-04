@@ -50,6 +50,9 @@ export class NBodyField {
   // 力场 RT (ping-pong)
   private forceRT: THREE.WebGLRenderTarget
 
+  // 星云可视化 RT
+  private nebulaRT: THREE.WebGLRenderTarget
+
   // 着色器材质
   private fieldMat: THREE.ShaderMaterial
   private renderMat: THREE.ShaderMaterial
@@ -64,6 +67,7 @@ export class NBodyField {
     this.scene = new THREE.Scene()
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial())
     this.scene.add(this.quad)
+    this.quad.position.set(0.5, 0.5, 0)
 
     const pc = this.config.particleCount
     const texSize = Math.ceil(Math.sqrt(pc))
@@ -79,6 +83,10 @@ export class NBodyField {
     this.stateRT1 = new THREE.WebGLRenderTarget(res, res, rtOpts)
     this.stateRT2 = new THREE.WebGLRenderTarget(res, res, rtOpts)
     this.forceRT = new THREE.WebGLRenderTarget(res, res, rtOpts)
+    this.nebulaRT = new THREE.WebGLRenderTarget(256, 256, {
+      minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat, type: THREE.FloatType,
+    })
 
     // 初始化粒子
     this.initializeParticles()
@@ -134,7 +142,7 @@ export class NBodyField {
 
   /** 获取渲染纹理（叠加用） */
   getRenderTexture(): THREE.Texture {
-    return this.stateRT1.texture
+    return this.nebulaRT.texture
   }
 
   // ────────────────────────────
@@ -148,13 +156,14 @@ export class NBodyField {
     // 1. 计算力场 → forceRT
     this.renderFullscreen(r, forceRT, this.fieldMat)
 
-    // 2. 更新粒子状态（position += velocity*dt + force*dt², velocity += force*dt）
-    // 直接在 state 纹理上做一次自定义更新 — 这里用一个临时全屏 pass
-    // 简化：用 compute-like pass 手动更新
+    // 2. 更新粒子状态
     this.updateParticles(dt)
 
     // 3. 阻尼 + 随机力
     this.applyDamping()
+
+    // 4. 渲染星云可视化 → nebulaRT
+    this.renderNebula(this.nebulaRT)
   }
 
   /**
@@ -279,6 +288,7 @@ export class NBodyField {
     this.stateRT1.dispose()
     this.stateRT2.dispose()
     this.forceRT.dispose()
+    this.nebulaRT.dispose()
     this.fieldMat.dispose()
     this.renderMat.dispose()
     this.quad.geometry.dispose()

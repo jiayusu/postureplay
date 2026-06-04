@@ -109,6 +109,7 @@ export class FluidSolver {
     const geo = new THREE.PlaneGeometry(1, 1)
     this.quad = new THREE.Mesh(geo, new THREE.MeshBasicMaterial())
     this.scene.add(this.quad)
+    this.quad.position.set(0.5, 0.5, 0)
 
     // ── RT 选项 ──
     const rtOpts = (type: THREE.TextureDataType = THREE.FloatType): THREE.RenderTargetOptions => ({

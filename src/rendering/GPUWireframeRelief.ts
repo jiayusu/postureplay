@@ -58,6 +58,7 @@ export class GPUWireframeRelief {
     })
     this.quad = new THREE.Mesh(geo, this.material)
     this.scene.add(this.quad)
+    this.quad.position.set(0.5, 0.5, 0)
   }
 
   /** 设置输入纹理（通常为视频纹理） */

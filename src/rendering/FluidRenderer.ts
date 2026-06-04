@@ -131,6 +131,7 @@ export class FluidRenderer {
 
     this.quad = new THREE.Mesh(geo, this.visualizeMat)
     this.scene.add(this.quad)
+    this.quad.position.set(0.5, 0.5, 0)
   }
 
   // ── 配置 ──

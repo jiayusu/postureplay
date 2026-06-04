@@ -60,6 +60,7 @@ export class MeridianForceLines {
     this.scene = new THREE.Scene()
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial())
     this.scene.add(this.quad)
+    this.quad.position.set(0.5, 0.5, 0)
 
     const rtOpts: THREE.RenderTargetOptions = {
       minFilter: THREE.LinearFilter,
