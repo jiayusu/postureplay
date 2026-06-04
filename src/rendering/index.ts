@@ -27,3 +27,9 @@ export { ReactionDiffusion } from './ReactionDiffusion'
 export type { RDConfig, RDSeed } from './ReactionDiffusion'
 export { NBodyField } from './NBodyField'
 export type { NBodyConfig, NBodySource } from './NBodyField'
+
+// LIC 流线 + 三元合成器
+export { LICFlowRenderer } from './LICFlowRenderer'
+export type { LICConfig } from './LICFlowRenderer'
+export { EffectCompositor } from './EffectCompositor'
+export type { CompositorConfig } from './EffectCompositor'
