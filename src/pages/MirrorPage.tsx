@@ -32,7 +32,7 @@ import { useUIStore } from '@/stores/uiStore'
 import { useEyeStore } from '@/stores/eyeStore'
 import CameraView from '@/components/CameraView'
 import VisualizationOverlay from '@/components/VisualizationOverlay'
-import GPUEffectOverlay from '@/components/GPUEffectOverlay'
+import SimulationOverlay from '@/components/SimulationOverlay'
 import EyeHeatmapOverlay from '@/components/EyeHeatmapOverlay'
 import ModeSwitcher from '@/components/ModeSwitcher'
 import EmotionHUD from '@/components/EmotionHUD'
@@ -171,9 +171,9 @@ export default function MirrorPage() {
         <CameraView ref={videoRef} mirrored className="w-full h-full object-cover" />
       </div>
 
-      {/* ---- 第 1.5 层：GPU 气场特效叠加（流体 + RD + NBody + LIC） ---- */}
+      {/* ---- 第 1.5 层：GPU 气场仿真叠加（流体 + RD + NBody + LIC） ---- */}
       <div className="absolute inset-0 z-[1] pointer-events-none">
-        <GPUEffectOverlay className="w-full h-full" />
+        <SimulationOverlay className="w-full h-full" />
       </div>
 
       {/* ---- 第 2 层：可视化叠加 ---- */}

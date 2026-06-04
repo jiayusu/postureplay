@@ -1,7 +1,7 @@
 /**
  * EffectCompositor — RD + NBody + LIC 三元语法合成器
  *
- * 将三个独立的 GPU 特效合成为一个 RT：
+ * 将三个独立的 GPU 仿真合成为一个 RT：
  *   tRD    = Reaction-Diffusion 图灵斑纹（面相气色）
  *   tNBody = N-Body 灵气星云（体态环绕粒子）
  *   tLIC   = LIC 流线（速度场流线可视化）
@@ -82,7 +82,7 @@ export class EffectCompositor {
   // ────────────────────────────────
 
   /**
-   * 合成三个特效纹理 → 输出到内部 RT
+   * 合成三个仿真纹理 → 输出到内部 RT
    * @returns 合成后的 RT 纹理
    */
   composite(

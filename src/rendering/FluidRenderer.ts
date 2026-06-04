@@ -42,7 +42,7 @@ export class FluidRenderer {
 
   private config: FluidRenderConfig
 
-  // 动态特效状态
+  // 动态仿真状态
   private vortexCenter: THREE.Vector2 = new THREE.Vector2(0.5, 0.5)
   private vortexIntensity: number = 0
   private pulsePhase: number = 0

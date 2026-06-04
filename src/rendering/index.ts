@@ -12,7 +12,7 @@ export type {
 export { PostProcessingPipeline } from './PostProcessing'
 export { InstancedParticleSystem } from './InstancedParticleSystem'
 
-// GPU 流体特效
+// GPU 流体仿真
 export { FluidSolver } from './FluidSolver'
 export type { FluidSource, FluidConfig } from './FluidSolver'
 export { spineToFlowSources, palmToFlowSources, boneToFlowSources } from './EnergyFlowField'
@@ -22,7 +22,7 @@ export type { FluidRenderConfig } from './FluidRenderer'
 export { GPUWireframeRelief } from './GPUWireframeRelief'
 export type { ReliefConfig } from './GPUWireframeRelief'
 
-// Taichi 风格特效
+// Taichi 风格仿真
 export { ReactionDiffusion } from './ReactionDiffusion'
 export type { RDConfig, RDSeed } from './ReactionDiffusion'
 export { NBodyField } from './NBodyField'
@@ -34,7 +34,7 @@ export type { LICConfig } from './LICFlowRenderer'
 export { EffectCompositor } from './EffectCompositor'
 export type { CompositorConfig } from './EffectCompositor'
 
-// C/D/E/F 新特效
+// C/D/E/F 仿真模块
 export { GPUParticleAdvection } from './GPUParticleAdvection'
 export type { ParticleAdvectionConfig } from './GPUParticleAdvection'
 export { MeridianForceLines } from './MeridianForceLines'

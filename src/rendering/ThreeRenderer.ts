@@ -1,6 +1,6 @@
 /**
  * Three.js GPU 渲染器 —— 主控类
- * 管理场景、相机、视频纹理、特效层和后处理管线
+ * 管理场景、相机、视频纹理、仿真层和后处理管线
  */
 import * as THREE from 'three'
 import { PostProcessingPipeline } from './PostProcessing'
@@ -83,7 +83,7 @@ export class ThreeRenderer {
   // ── 视频层 ──
   private videoTexture: THREE.VideoTexture | null = null
   private videoPlane: THREE.Mesh | null = null
-  // ── 特效层 ──
+  // ── 仿真层 ──
   // 脊柱
   private spineGroup: THREE.Group
   private glowColumn: THREE.Mesh | null = null
@@ -129,7 +129,7 @@ export class ThreeRenderer {
     // ── 场景 ──
     this.scene = new THREE.Scene()
 
-    // ── 正交相机（2D 特效用） ──
+    // ── 正交相机（2D 仿真用） ──
     // 左上角为 (0,0)，向右 x+，向下 y+
     this.camera = new THREE.OrthographicCamera(
       0, width,
@@ -147,7 +147,7 @@ export class ThreeRenderer {
       height,
     )
 
-    // ── 特效层 ──
+    // ── 仿真层 ──
     this.spineGroup = new THREE.Group()
     this.spineGroup.name = 'spineLayer'
     this.spineGroup.visible = false
@@ -212,7 +212,7 @@ export class ThreeRenderer {
   }
 
   // ─────────────────────────────────────────
-  // 脊柱特效层
+  // 脊柱仿真层
   // ─────────────────────────────────────────
 
   /** 创建/更新脊柱光柱 */
@@ -357,7 +357,7 @@ export class ThreeRenderer {
   }
 
   // ─────────────────────────────────────────
-  // 手相特效层
+  // 手相仿真层
   // ─────────────────────────────────────────
 
   /** 确保手相粒子系统存在 */
@@ -427,7 +427,7 @@ export class ThreeRenderer {
   }
 
   // ─────────────────────────────────────────
-  // 骨相特效层
+  // 骨相仿真层
   // ─────────────────────────────────────────
 
   /** 确保骨相粒子系统存在 */
@@ -722,7 +722,7 @@ export class ThreeRenderer {
     this.disposed = true
     this.stop()
 
-    // 清理特效层
+    // 清理仿真层
     ;[this.spineGroup, this.palmGroup, this.boneGroup].forEach(group => {
       group.traverse(child => {
         if (child instanceof THREE.Mesh || child instanceof THREE.Line) {

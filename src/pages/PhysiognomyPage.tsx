@@ -29,9 +29,9 @@ import { PalmStarsOverlay } from '@/components/PalmStarsOverlay'
 import { BoneGlowOverlay } from '@/components/BoneGlowOverlay'
 import { EyeNoseOverlay } from '@/components/EyeNoseOverlay'
 import { BodySilhouetteOverlay } from '@/components/BodySilhouetteOverlay'
-import GPUEffectOverlay from '@/components/GPUEffectOverlay'
+import SimulationOverlay from '@/components/SimulationOverlay'
 import { FortuneConstellation } from '@/components/FortuneConstellation'
-import type { GPUEffectsConfig } from '@/hooks/useGPUEffects'
+import type { SimulationConfig } from '@/hooks/useSimulation'
 import type { FortuneInterpretation, TreatmentPlan } from '@/types/physiognomy'
 
 /** 视图模式 (本地定义，不再依赖 @/rendering) */
@@ -56,8 +56,8 @@ export default function PhysiognomyPage() {
   const [showFortune, setShowFortune] = useState(false)
   const [showConstellation, setShowConstellation] = useState(false)
 
-  // ── 面相专属 GPU 特效配置：弱流体 + 强 RD 斑纹 + 经络线 + 脉轮 ──
-  const physioGPUConfig = useRef<GPUEffectsConfig>({
+  // ── 面相专属仿真配置：弱流体 + 强 RD 斑纹 + 经络线 + 脉轮 ──
+  const physioSimConfig = useRef<SimulationConfig>({
     fluidEnabled: true,
     rdIntensity: 1.2,           // 面相模式 RD 加强
     nBodyIntensity: 0.6,        // 星云收敛
@@ -218,17 +218,17 @@ export default function PhysiognomyPage() {
       {/* 隐藏的分析 Canvas（手部颜色采样用） */}
       <canvas ref={analysisCanvasRef} className="hidden" />
 
-      {/* ── 第 2 层：暗色半透明底衬 + GPU 气场特效 ── */}
+      {/* ── 第 2 层：暗色半透明底衬 + GPU 气场仿真 ── */}
       <div className="absolute inset-0 z-[1] bg-black/35 pointer-events-none" />
 
-      {/* ── GPU 气场特效层 (面相定制配置) ── */}
+      {/* ── GPU 气场仿真层 (面相定制配置) ── */}
       {allModelsReady && (
         <div className="absolute inset-0 z-[2] pointer-events-none">
-          <GPUEffectOverlay className="w-full h-full" config={physioGPUConfig.current} />
+          <SimulationOverlay className="w-full h-full" config={physioSimConfig.current} />
         </div>
       )}
 
-      {/* ── 第 3 层：Canvas 2D Rutt/Etra 线框浮雕特效 + 眼鼻 + 人像 ── */}
+      {/* ── 第 3 层：Canvas 2D Rutt/Etra 线框浮雕 + 眼鼻 + 人像 ── */}
       {allModelsReady && (
         <>
           {/* 人体能量体剪影 (依赖 pose keypoints，z-[3]) */}

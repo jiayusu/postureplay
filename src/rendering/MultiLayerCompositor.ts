@@ -3,7 +3,7 @@
  *
  * 管线段：
  *   1. Compute: fluid / rd / nbody / particles / meridian / lic / chakra → 各自 RT
- *   2. Multi-layer composite → compositeRT（加法混合所有特效层）
+ *   2. Multi-layer composite → compositeRT（加法混合所有仿真层）
  *   3. Breathing warp → warpRT（呼吸扭曲 compositeRT）
  *   4. Output → screen 或外部 RT
  */
@@ -204,7 +204,7 @@ export class MultiLayerCompositor {
     this.screenBlitMat.uniforms.tScene.value = this.warpRT.texture
     this.quad.material = this.screenBlitMat
     r.setRenderTarget(null)
-    // 不清除，让特效透明叠加
+    // 不清除，让仿真层透明叠加
     r.render(this.scene, this.camera)
   }
 

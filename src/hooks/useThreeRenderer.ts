@@ -28,11 +28,11 @@ interface UseThreeRendererReturn {
   rendererRef: React.RefObject<ThreeRenderer | null>
   /** 绑定视频元素 */
   bindVideo: (video: HTMLVideoElement) => void
-  /** 更新脊柱特效 */
+  /** 更新脊柱仿真 */
   updateSpineTree: (params: SpineTreeParams) => void
-  /** 更新手相特效 */
+  /** 更新手相仿真 */
   updatePalmStars: (params: PalmStarsParams) => void
-  /** 更新骨相特效 */
+  /** 更新骨相仿真 */
   updateBoneGlow: (params: BonePhysiognomyParams) => void
 }
 

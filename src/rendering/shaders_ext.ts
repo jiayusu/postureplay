@@ -1,5 +1,5 @@
 /**
- * 附加着色器 — C/D/E/F 新特效 GLSL
+ * 附加着色器 — C/D/E/F 仿真模块 GLSL
  *
  * 24. PARTICLE_SMOKE_ADVECT — 粒子烟雾平流（沿速度场漂移）
  * 25. PARTICLE_SMOKE_RENDER — 粒子软光晕渲染
@@ -7,7 +7,7 @@
  * 27. MERIDIAN_RENDER      — 力场线可视化
  * 28. BREATHING_WARP       — 呼吸驱动径向畸变 + 波纹
  * 29. CHAKRA_GLOW_ORB      — 脉轮球体辉光
- * 30. MULTI_LAYER_COMPOSITE — 多层合成（所有特效叠加）
+ * 30. MULTI_LAYER_COMPOSITE — 多层合成（所有仿真层叠加）
  */
 
 // ──────────────────────────────────────────────
@@ -265,7 +265,7 @@ void main() {
 }`
 
 // ──────────────────────────────────────────────
-// 30. 多层合成 — 所有特效叠加
+// 30. 多层合成 — 所有仿真层叠加
 // ──────────────────────────────────────────────
 
 export const MULTI_LAYER_COMPOSITE_FRAG = /* glsl */ `
@@ -287,7 +287,7 @@ varying vec2 vUv;
 void main() {
   vec3 result = vec3(0.0);
 
-  // Additive 叠加所有特效层
+  // Additive 叠加所有仿真层
   vec4 rd = texture2D(tRD, vUv);
   result += rd.rgb * rd.a * uRDStrength;
 
