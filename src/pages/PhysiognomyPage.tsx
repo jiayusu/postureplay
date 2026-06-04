@@ -29,6 +29,9 @@ import { PalmStarsOverlay } from '@/components/PalmStarsOverlay'
 import { BoneGlowOverlay } from '@/components/BoneGlowOverlay'
 import { EyeNoseOverlay } from '@/components/EyeNoseOverlay'
 import { BodySilhouetteOverlay } from '@/components/BodySilhouetteOverlay'
+import GPUEffectOverlay from '@/components/GPUEffectOverlay'
+import { FortuneConstellation } from '@/components/FortuneConstellation'
+import type { GPUEffectsConfig } from '@/hooks/useGPUEffects'
 import type { FortuneInterpretation, TreatmentPlan } from '@/types/physiognomy'
 
 /** 视图模式 (本地定义，不再依赖 @/rendering) */
@@ -51,6 +54,19 @@ export default function PhysiognomyPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('combined')
   const [showFortune, setShowFortune] = useState(false)
+  const [showConstellation, setShowConstellation] = useState(false)
+
+  // ── 面相专属 GPU 特效配置：弱流体 + 强 RD 斑纹 + 经络线 + 脉轮 ──
+  const physioGPUConfig = useRef<GPUEffectsConfig>({
+    fluidEnabled: true,
+    rdIntensity: 1.2,           // 面相模式 RD 加强
+    nBodyIntensity: 0.6,        // 星云收敛
+    licIntensity: 0.2,          // 流线减弱（面相不需要）
+    particleIntensity: 0.5,     // 烟雾适中
+    meridianIntensity: 0.8,     // 经络加强
+    chakraIntensity: 0.5,       // 脉轮适中
+    globalAlpha: 0.5,
+  })
 
   // ---- Camera & Detection Hooks ----
   useCameraSetup(videoRef)
@@ -122,6 +138,7 @@ export default function PhysiognomyPage() {
   // ---- 运势生成 ----
   const handleGenerateFortune = useCallback(async () => {
     setShowFortune(true)
+    setShowConstellation(true)
     await generateFortune()
   }, [generateFortune])
 
@@ -201,8 +218,15 @@ export default function PhysiognomyPage() {
       {/* 隐藏的分析 Canvas（手部颜色采样用） */}
       <canvas ref={analysisCanvasRef} className="hidden" />
 
-      {/* ── 第 2 层：暗色半透明底衬 (给线框浮雕提供对比度) ── */}
+      {/* ── 第 2 层：暗色半透明底衬 + GPU 气场特效 ── */}
       <div className="absolute inset-0 z-[1] bg-black/35 pointer-events-none" />
+
+      {/* ── GPU 气场特效层 (面相定制配置) ── */}
+      {allModelsReady && (
+        <div className="absolute inset-0 z-[2] pointer-events-none">
+          <GPUEffectOverlay className="w-full h-full" config={physioGPUConfig.current} />
+        </div>
+      )}
 
       {/* ── 第 3 层：Canvas 2D Rutt/Etra 线框浮雕特效 + 眼鼻 + 人像 ── */}
       {allModelsReady && (
@@ -298,16 +322,21 @@ export default function PhysiognomyPage() {
       {/* ── 运势解读弹窗 ── */}
       {showFortune && (
         fortuneLoading ? (
-          <FortuneLoadingModal onClose={() => setShowFortune(false)} />
+          <>
+            {showConstellation && <FortuneConstellation />}
+            <FortuneLoadingModal onClose={() => { setShowFortune(false); setShowConstellation(false) }} />
+          </>
         ) : fortune ? (
-          <FortuneModal
-            fortune={fortune}
-            onClose={() => setShowFortune(false)}
-          />
+          <>
+            <FortuneModal
+              fortune={fortune}
+              onClose={() => { setShowFortune(false); setShowConstellation(false) }}
+            />
+          </>
         ) : (
           <FortuneErrorModal
             error={fortuneError ?? '运势生成失败'}
-            onClose={() => setShowFortune(false)}
+            onClose={() => { setShowFortune(false); setShowConstellation(false) }}
           />
         )
       )}
